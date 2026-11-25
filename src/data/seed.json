@@ -1,0 +1,1640 @@
+{
+ "clientes": [
+  {
+   "id": 1,
+   "nome": "Buffet Sabor & Arte",
+   "tipo": "PJ",
+   "documento": "25.427.614/0001-75",
+   "email": "contato01@example.com",
+   "telefone": "(85) 90000-0001",
+   "cidade": "Fortaleza",
+   "observacoes": "Cozinha de eventos para casamentos e formaturas."
+  },
+  {
+   "id": 2,
+   "nome": "Cerimonial Aurora",
+   "tipo": "PJ",
+   "documento": "92.980.205/0001-38",
+   "email": "contato02@example.com",
+   "telefone": "(85) 90000-0002",
+   "cidade": "Fortaleza",
+   "observacoes": "Cliente recorrente, paga sempre em dia."
+  },
+  {
+   "id": 3,
+   "nome": "Eventos Maré Alta",
+   "tipo": "PJ",
+   "documento": "86.736.669/0001-63",
+   "email": "contato03@example.com",
+   "telefone": "(85) 90000-0003",
+   "cidade": "Aquiraz",
+   "observacoes": ""
+  },
+  {
+   "id": 4,
+   "nome": "Studio Lira Fotografia",
+   "tipo": "PJ",
+   "documento": "83.660.962/0001-72",
+   "email": "contato04@example.com",
+   "telefone": "(85) 90000-0004",
+   "cidade": "Fortaleza",
+   "observacoes": "Aluga cenários para ensaios."
+  },
+  {
+   "id": 5,
+   "nome": "Colégio Nova Geração",
+   "tipo": "PJ",
+   "documento": "85.551.345/0001-10",
+   "email": "contato05@example.com",
+   "telefone": "(85) 90000-0005",
+   "cidade": "Eusébio",
+   "observacoes": "Formaturas e feira de ciências."
+  },
+  {
+   "id": 6,
+   "nome": "Agência Quadro Branco",
+   "tipo": "PJ",
+   "documento": "88.182.213/0001-46",
+   "email": "contato06@example.com",
+   "telefone": "(85) 90000-0006",
+   "cidade": "Fortaleza",
+   "observacoes": "Ativações de marca e confraternizações."
+  },
+  {
+   "id": 7,
+   "nome": "Hotel Pôr do Sol",
+   "tipo": "PJ",
+   "documento": "22.560.111/0001-97",
+   "email": "contato07@example.com",
+   "telefone": "(85) 90000-0007",
+   "cidade": "Caucaia",
+   "observacoes": "Eventos de fim de ano."
+  },
+  {
+   "id": 8,
+   "nome": "Atlética Pioneiros",
+   "tipo": "PJ",
+   "documento": "72.795.421/0001-36",
+   "email": "contato08@example.com",
+   "telefone": "(85) 90000-0008",
+   "cidade": "Maracanaú",
+   "observacoes": ""
+  },
+  {
+   "id": 9,
+   "nome": "Mariana Albuquerque",
+   "tipo": "PF",
+   "documento": "506.357.456-55",
+   "email": "contato09@example.com",
+   "telefone": "(85) 90000-0009",
+   "cidade": "Fortaleza",
+   "observacoes": "Casamento em março."
+  },
+  {
+   "id": 10,
+   "nome": "Rafael Nogueira",
+   "tipo": "PF",
+   "documento": "924.485.863-75",
+   "email": "contato10@example.com",
+   "telefone": "(85) 90000-0010",
+   "cidade": "Fortaleza",
+   "observacoes": ""
+  },
+  {
+   "id": 11,
+   "nome": "Camila Teixeira",
+   "tipo": "PF",
+   "documento": "753.178.840-53",
+   "email": "contato11@example.com",
+   "telefone": "(85) 90000-0011",
+   "cidade": "Eusébio",
+   "observacoes": "Aniversário de 15 anos da filha."
+  },
+  {
+   "id": 12,
+   "nome": "Bruno Carvalho",
+   "tipo": "PF",
+   "documento": "191.670.650-47",
+   "email": "contato12@example.com",
+   "telefone": "(85) 90000-0012",
+   "cidade": "Sobral",
+   "observacoes": "Retira os itens no galpão."
+  },
+  {
+   "id": 13,
+   "nome": "Juliana Freitas",
+   "tipo": "PF",
+   "documento": "394.568.244-92",
+   "email": "contato13@example.com",
+   "telefone": "(85) 90000-0013",
+   "cidade": "Fortaleza",
+   "observacoes": ""
+  },
+  {
+   "id": 14,
+   "nome": "Diego Monteiro",
+   "tipo": "PF",
+   "documento": "820.833.691-49",
+   "email": "contato14@example.com",
+   "telefone": "(85) 90000-0014",
+   "cidade": "Caucaia",
+   "observacoes": "Prefere pagar no Pix."
+  }
+ ],
+ "produtos": [
+  {
+   "id": 1,
+   "codigo": "LUZ-001",
+   "nome": "Refletor LED RGB 200W",
+   "categoria": "Iluminação",
+   "descricao": "Refletor com controle DMX e efeito estroboscópico.",
+   "valor_diaria": 85.0,
+   "valor_reposicao": 900.0,
+   "quantidade": 24,
+   "ativo": true
+  },
+  {
+   "id": 2,
+   "codigo": "LUZ-002",
+   "nome": "Par LED 54x3W",
+   "categoria": "Iluminação",
+   "descricao": "Iluminação de ambiente com 7 canais DMX.",
+   "valor_diaria": 45.0,
+   "valor_reposicao": 480.0,
+   "quantidade": 36,
+   "ativo": true
+  },
+  {
+   "id": 3,
+   "codigo": "LUZ-003",
+   "nome": "Moving Head Beam 230",
+   "categoria": "Iluminação",
+   "descricao": "Cabeça móvel para pista de dança.",
+   "valor_diaria": 260.0,
+   "valor_reposicao": 3200.0,
+   "quantidade": 8,
+   "ativo": true
+  },
+  {
+   "id": 4,
+   "codigo": "LUZ-004",
+   "nome": "Globo de Espelhos 50 cm",
+   "categoria": "Iluminação",
+   "descricao": "Globo com motor silencioso.",
+   "valor_diaria": 70.0,
+   "valor_reposicao": 420.0,
+   "quantidade": 6,
+   "ativo": true
+  },
+  {
+   "id": 5,
+   "codigo": "LUZ-005",
+   "nome": "Varal de Luzes 10 m",
+   "categoria": "Iluminação",
+   "descricao": "Cordão com 20 lâmpadas de filamento.",
+   "valor_diaria": 55.0,
+   "valor_reposicao": 260.0,
+   "quantidade": 30,
+   "ativo": true
+  },
+  {
+   "id": 6,
+   "codigo": "LUZ-006",
+   "nome": "Fita LED Cenográfica 5 m",
+   "categoria": "Iluminação",
+   "descricao": "Fita RGB com controle remoto.",
+   "valor_diaria": 30.0,
+   "valor_reposicao": 150.0,
+   "quantidade": 40,
+   "ativo": true
+  },
+  {
+   "id": 7,
+   "codigo": "SOM-001",
+   "nome": "Caixa Ativa 15\" 500 W",
+   "categoria": "Som",
+   "descricao": "Caixa amplificada para ambientes de até 150 pessoas.",
+   "valor_diaria": 120.0,
+   "valor_reposicao": 2400.0,
+   "quantidade": 12,
+   "ativo": true
+  },
+  {
+   "id": 8,
+   "codigo": "SOM-002",
+   "nome": "Subwoofer 18\" Ativo",
+   "categoria": "Som",
+   "descricao": "Reforço de graves para pista.",
+   "valor_diaria": 180.0,
+   "valor_reposicao": 3600.0,
+   "quantidade": 6,
+   "ativo": false
+  },
+  {
+   "id": 9,
+   "codigo": "SOM-003",
+   "nome": "Mesa de Som 12 canais",
+   "categoria": "Som",
+   "descricao": "Mesa analógica com efeitos.",
+   "valor_diaria": 150.0,
+   "valor_reposicao": 2800.0,
+   "quantidade": 4,
+   "ativo": true
+  },
+  {
+   "id": 10,
+   "codigo": "SOM-004",
+   "nome": "Microfone sem fio",
+   "categoria": "Som",
+   "descricao": "Microfone de mão UHF com receptor.",
+   "valor_diaria": 60.0,
+   "valor_reposicao": 700.0,
+   "quantidade": 16,
+   "ativo": true
+  },
+  {
+   "id": 11,
+   "codigo": "MOB-001",
+   "nome": "Cadeira Tiffany Branca",
+   "categoria": "Mobiliário",
+   "descricao": "Cadeira empilhável em acrílico.",
+   "valor_diaria": 9.0,
+   "valor_reposicao": 120.0,
+   "quantidade": 220,
+   "ativo": true
+  },
+  {
+   "id": 12,
+   "codigo": "MOB-002",
+   "nome": "Mesa Redonda 1,5 m",
+   "categoria": "Mobiliário",
+   "descricao": "Mesa para 8 lugares, madeira.",
+   "valor_diaria": 35.0,
+   "valor_reposicao": 480.0,
+   "quantidade": 40,
+   "ativo": true
+  },
+  {
+   "id": 13,
+   "codigo": "MOB-003",
+   "nome": "Sofá Chesterfield 3 lugares",
+   "categoria": "Mobiliário",
+   "descricao": "Sofá em couro sintético capitonê.",
+   "valor_diaria": 220.0,
+   "valor_reposicao": 3500.0,
+   "quantidade": 5,
+   "ativo": true
+  },
+  {
+   "id": 14,
+   "codigo": "MOB-004",
+   "nome": "Puff de Veludo",
+   "categoria": "Mobiliário",
+   "descricao": "Puff redondo, várias cores.",
+   "valor_diaria": 40.0,
+   "valor_reposicao": 260.0,
+   "quantidade": 30,
+   "ativo": true
+  },
+  {
+   "id": 15,
+   "codigo": "MOB-005",
+   "nome": "Banqueta Alta Preta",
+   "categoria": "Mobiliário",
+   "descricao": "Banqueta para bancada de bar.",
+   "valor_diaria": 22.0,
+   "valor_reposicao": 190.0,
+   "quantidade": 48,
+   "ativo": true
+  },
+  {
+   "id": 16,
+   "codigo": "MOB-006",
+   "nome": "Aparador Rústico",
+   "categoria": "Mobiliário",
+   "descricao": "Aparador em madeira de demolição.",
+   "valor_diaria": 90.0,
+   "valor_reposicao": 1100.0,
+   "quantidade": 10,
+   "ativo": true
+  },
+  {
+   "id": 17,
+   "codigo": "DEC-001",
+   "nome": "Painel Redondo Cenográfico",
+   "categoria": "Decoração",
+   "descricao": "Painel de 1,8 m com sustentação.",
+   "valor_diaria": 110.0,
+   "valor_reposicao": 650.0,
+   "quantidade": 14,
+   "ativo": true
+  },
+  {
+   "id": 18,
+   "codigo": "DEC-002",
+   "nome": "Arranjo Floral Artificial",
+   "categoria": "Decoração",
+   "descricao": "Arranjo de mesa em tons neutros.",
+   "valor_diaria": 65.0,
+   "valor_reposicao": 320.0,
+   "quantidade": 60,
+   "ativo": true
+  },
+  {
+   "id": 19,
+   "codigo": "DEC-003",
+   "nome": "Cortina de Voal 3 m",
+   "categoria": "Decoração",
+   "descricao": "Cortina branca com varão.",
+   "valor_diaria": 40.0,
+   "valor_reposicao": 210.0,
+   "quantidade": 26,
+   "ativo": true
+  },
+  {
+   "id": 20,
+   "codigo": "DEC-004",
+   "nome": "Letreiro Neon \"Amor\"",
+   "categoria": "Decoração",
+   "descricao": "Neon de LED, 1,2 m, branco quente.",
+   "valor_diaria": 190.0,
+   "valor_reposicao": 1400.0,
+   "quantidade": 3,
+   "ativo": true
+  },
+  {
+   "id": 21,
+   "codigo": "DEC-005",
+   "nome": "Tapete Persa 2x3 m",
+   "categoria": "Decoração",
+   "descricao": "Tapete estampado, tons de azul.",
+   "valor_diaria": 75.0,
+   "valor_reposicao": 800.0,
+   "quantidade": 12,
+   "ativo": true
+  },
+  {
+   "id": 22,
+   "codigo": "EST-001",
+   "nome": "Tenda 5x5 m",
+   "categoria": "Estrutura",
+   "descricao": "Tenda piramidal com cobertura branca.",
+   "valor_diaria": 480.0,
+   "valor_reposicao": 5200.0,
+   "quantidade": 6,
+   "ativo": true
+  },
+  {
+   "id": 23,
+   "codigo": "EST-002",
+   "nome": "Tenda 10x10 m",
+   "categoria": "Estrutura",
+   "descricao": "Tenda com laterais, montagem inclusa.",
+   "valor_diaria": 1100.0,
+   "valor_reposicao": 14000.0,
+   "quantidade": 3,
+   "ativo": true
+  },
+  {
+   "id": 24,
+   "codigo": "EST-003",
+   "nome": "Palco Modular 2x1 m",
+   "categoria": "Estrutura",
+   "descricao": "Módulo de palco, altura regulável.",
+   "valor_diaria": 170.0,
+   "valor_reposicao": 1900.0,
+   "quantidade": 12,
+   "ativo": true
+  },
+  {
+   "id": 25,
+   "codigo": "EST-004",
+   "nome": "Treliça Q30 3 m",
+   "categoria": "Estrutura",
+   "descricao": "Box truss de alumínio.",
+   "valor_diaria": 150.0,
+   "valor_reposicao": 1700.0,
+   "quantidade": 16,
+   "ativo": true
+  },
+  {
+   "id": 26,
+   "codigo": "BUF-001",
+   "nome": "Chafing Dish Inox",
+   "categoria": "Buffet",
+   "descricao": "Rechaud retangular com 2 cubas.",
+   "valor_diaria": 45.0,
+   "valor_reposicao": 380.0,
+   "quantidade": 28,
+   "ativo": true
+  },
+  {
+   "id": 27,
+   "codigo": "BUF-002",
+   "nome": "Mesa de Doces Vitrine",
+   "categoria": "Buffet",
+   "descricao": "Expositor de doces em vidro.",
+   "valor_diaria": 130.0,
+   "valor_reposicao": 1200.0,
+   "quantidade": 8,
+   "ativo": true
+  },
+  {
+   "id": 28,
+   "codigo": "BUF-003",
+   "nome": "Climatizador Industrial",
+   "categoria": "Buffet",
+   "descricao": "Climatizador evaporativo móvel.",
+   "valor_diaria": 300.0,
+   "valor_reposicao": 4200.0,
+   "quantidade": 5,
+   "ativo": true
+  },
+  {
+   "id": 29,
+   "codigo": "BUF-004",
+   "nome": "Fogão Industrial 4 bocas",
+   "categoria": "Buffet",
+   "descricao": "Fogão para cozinha de apoio.",
+   "valor_diaria": 160.0,
+   "valor_reposicao": 1800.0,
+   "quantidade": 4,
+   "ativo": true
+  },
+  {
+   "id": 30,
+   "codigo": "BUF-005",
+   "nome": "Coqueteleira e Kit Bar",
+   "categoria": "Buffet",
+   "descricao": "Kit de bar com 12 peças.",
+   "valor_diaria": 50.0,
+   "valor_reposicao": 300.0,
+   "quantidade": 10,
+   "ativo": true
+  }
+ ],
+ "orcamentos": [
+  {
+   "id": 1,
+   "cliente_id": 6,
+   "status": "finalizado",
+   "evento": "Feira de Ciências Agência",
+   "criado_dias": -190,
+   "retirada_dias": -169,
+   "devolucao_dias": -166,
+   "desconto": 100.0,
+   "observacoes": "Entrega e montagem inclusas.",
+   "itens": [
+    {
+     "produto_id": 15,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 3,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 14,
+     "quantidade": 12
+    },
+    {
+     "produto_id": 20,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 19,
+     "quantidade": 7
+    },
+    {
+     "produto_id": 17,
+     "quantidade": 4
+    }
+   ]
+  },
+  {
+   "id": 2,
+   "cliente_id": 11,
+   "status": "finalizado",
+   "evento": "Feira de Ciências Camila",
+   "criado_dias": -185,
+   "retirada_dias": -167,
+   "devolucao_dias": -165,
+   "desconto": 200.0,
+   "observacoes": "Retirada pelo cliente.",
+   "itens": [
+    {
+     "produto_id": 16,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 27,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 18,
+     "quantidade": 24
+    },
+    {
+     "produto_id": 17,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 13,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 7,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 10,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 3,
+   "cliente_id": 11,
+   "status": "finalizado",
+   "evento": "Feira de Ciências Camila",
+   "criado_dias": -160,
+   "retirada_dias": -144,
+   "devolucao_dias": -140,
+   "desconto": 0.0,
+   "observacoes": "",
+   "itens": [
+    {
+     "produto_id": 24,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 19,
+     "quantidade": 10
+    },
+    {
+     "produto_id": 10,
+     "quantidade": 6
+    },
+    {
+     "produto_id": 29,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 14,
+     "quantidade": 9
+    },
+    {
+     "produto_id": 23,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 4,
+   "cliente_id": 12,
+   "status": "finalizado",
+   "evento": "Casamento Bruno",
+   "criado_dias": -160,
+   "retirada_dias": -150,
+   "devolucao_dias": -146,
+   "desconto": 50.0,
+   "observacoes": "",
+   "itens": [
+    {
+     "produto_id": 10,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 16,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 6,
+     "quantidade": 8
+    },
+    {
+     "produto_id": 15,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 25,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 17,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 3,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 5,
+   "cliente_id": 12,
+   "status": "finalizado",
+   "evento": "Aniversário Bruno",
+   "criado_dias": -147,
+   "retirada_dias": -127,
+   "devolucao_dias": -123,
+   "desconto": 0.0,
+   "observacoes": "Montagem às 14h.",
+   "itens": [
+    {
+     "produto_id": 5,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 22,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 18,
+     "quantidade": 9
+    }
+   ]
+  },
+  {
+   "id": 6,
+   "cliente_id": 9,
+   "status": "finalizado",
+   "evento": "Chá de Bebê Mariana",
+   "criado_dias": -147,
+   "retirada_dias": -135,
+   "devolucao_dias": -132,
+   "desconto": 150.0,
+   "observacoes": "",
+   "itens": [
+    {
+     "produto_id": 27,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 19,
+     "quantidade": 10
+    },
+    {
+     "produto_id": 7,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 4,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 21,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 24,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 10,
+     "quantidade": 3
+    }
+   ]
+  },
+  {
+   "id": 7,
+   "cliente_id": 2,
+   "status": "finalizado",
+   "evento": "Lançamento de Marca Cerimonial",
+   "criado_dias": -90,
+   "retirada_dias": -79,
+   "devolucao_dias": -78,
+   "desconto": 50.0,
+   "observacoes": "Retirada pelo cliente.",
+   "itens": [
+    {
+     "produto_id": 30,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 3,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 2,
+     "quantidade": 14
+    },
+    {
+     "produto_id": 13,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 22,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 27,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 8,
+   "cliente_id": 14,
+   "status": "finalizado",
+   "evento": "Churrasco de Fim de Ano Diego",
+   "criado_dias": -88,
+   "retirada_dias": -67,
+   "devolucao_dias": -63,
+   "desconto": 50.0,
+   "observacoes": "Montagem às 14h.",
+   "itens": [
+    {
+     "produto_id": 14,
+     "quantidade": 6
+    },
+    {
+     "produto_id": 11,
+     "quantidade": 33
+    },
+    {
+     "produto_id": 6,
+     "quantidade": 8
+    }
+   ]
+  },
+  {
+   "id": 9,
+   "cliente_id": 10,
+   "status": "finalizado",
+   "evento": "Lançamento de Marca Rafael",
+   "criado_dias": -83,
+   "retirada_dias": -60,
+   "devolucao_dias": -59,
+   "desconto": 0.0,
+   "observacoes": "",
+   "itens": [
+    {
+     "produto_id": 9,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 4,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 21,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 2,
+     "quantidade": 5
+    }
+   ]
+  },
+  {
+   "id": 10,
+   "cliente_id": 10,
+   "status": "finalizado",
+   "evento": "Aniversário Rafael",
+   "criado_dias": -76,
+   "retirada_dias": -53,
+   "devolucao_dias": -52,
+   "desconto": 50.0,
+   "observacoes": "",
+   "itens": [
+    {
+     "produto_id": 26,
+     "quantidade": 11
+    },
+    {
+     "produto_id": 5,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 28,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 2,
+     "quantidade": 10
+    }
+   ]
+  },
+  {
+   "id": 11,
+   "cliente_id": 3,
+   "status": "finalizado",
+   "evento": "Chá de Bebê Eventos",
+   "criado_dias": -65,
+   "retirada_dias": -56,
+   "devolucao_dias": -54,
+   "desconto": 0.0,
+   "observacoes": "Retirada pelo cliente.",
+   "itens": [
+    {
+     "produto_id": 18,
+     "quantidade": 9
+    },
+    {
+     "produto_id": 7,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 15,
+     "quantidade": 19
+    },
+    {
+     "produto_id": 21,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 12,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 16,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 27,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 12,
+   "cliente_id": 6,
+   "status": "finalizado",
+   "evento": "Aniversário Agência",
+   "criado_dias": -64,
+   "retirada_dias": -56,
+   "devolucao_dias": -54,
+   "desconto": 100.0,
+   "observacoes": "Montagem às 14h.",
+   "itens": [
+    {
+     "produto_id": 17,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 16,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 4,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 18,
+     "quantidade": 6
+    },
+    {
+     "produto_id": 27,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 10,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 28,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 13,
+   "cliente_id": 8,
+   "status": "finalizado",
+   "evento": "Aniversário Atlética",
+   "criado_dias": -60,
+   "retirada_dias": -36,
+   "devolucao_dias": -34,
+   "desconto": 200.0,
+   "observacoes": "",
+   "itens": [
+    {
+     "produto_id": 5,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 21,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 24,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 18,
+     "quantidade": 12
+    },
+    {
+     "produto_id": 11,
+     "quantidade": 88
+    },
+    {
+     "produto_id": 3,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 15,
+     "quantidade": 14
+    }
+   ]
+  },
+  {
+   "id": 14,
+   "cliente_id": 14,
+   "status": "cancelado",
+   "evento": "Feira de Ciências Diego",
+   "criado_dias": -38,
+   "retirada_dias": -23,
+   "devolucao_dias": -20,
+   "desconto": 100.0,
+   "observacoes": "Montagem às 14h.",
+   "itens": [
+    {
+     "produto_id": 12,
+     "quantidade": 12
+    },
+    {
+     "produto_id": 10,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 28,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 15,
+   "cliente_id": 6,
+   "status": "cancelado",
+   "evento": "Churrasco de Fim de Ano Agência",
+   "criado_dias": -25,
+   "retirada_dias": -13,
+   "devolucao_dias": -10,
+   "desconto": 0.0,
+   "observacoes": "Retirada pelo cliente.",
+   "itens": [
+    {
+     "produto_id": 14,
+     "quantidade": 6
+    },
+    {
+     "produto_id": 12,
+     "quantidade": 8
+    },
+    {
+     "produto_id": 6,
+     "quantidade": 12
+    },
+    {
+     "produto_id": 7,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 16,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 9,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 16,
+   "cliente_id": 2,
+   "status": "cancelado",
+   "evento": "Confraternização Cerimonial",
+   "criado_dias": -23,
+   "retirada_dias": -10,
+   "devolucao_dias": -6,
+   "desconto": 200.0,
+   "observacoes": "Montagem às 14h.",
+   "itens": [
+    {
+     "produto_id": 18,
+     "quantidade": 12
+    },
+    {
+     "produto_id": 9,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 28,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 13,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 23,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 16,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 20,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 17,
+   "cliente_id": 6,
+   "status": "aprovado",
+   "evento": "Formatura Agência",
+   "criado_dias": -15,
+   "retirada_dias": 4,
+   "devolucao_dias": 7,
+   "desconto": 50.0,
+   "observacoes": "Entrega e montagem inclusas.",
+   "itens": [
+    {
+     "produto_id": 21,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 22,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 29,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 24,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 30,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 2,
+     "quantidade": 10
+    }
+   ]
+  },
+  {
+   "id": 18,
+   "cliente_id": 4,
+   "status": "aprovado",
+   "evento": "Inauguração Studio",
+   "criado_dias": -13,
+   "retirada_dias": -1,
+   "devolucao_dias": 2,
+   "desconto": 50.0,
+   "observacoes": "Montagem às 14h.",
+   "itens": [
+    {
+     "produto_id": 2,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 25,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 4,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 6,
+     "quantidade": 8
+    },
+    {
+     "produto_id": 21,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 28,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 29,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 19,
+   "cliente_id": 14,
+   "status": "enviado",
+   "evento": "Confraternização Diego",
+   "criado_dias": -12,
+   "retirada_dias": 5,
+   "devolucao_dias": 8,
+   "desconto": 100.0,
+   "observacoes": "Entrega e montagem inclusas.",
+   "itens": [
+    {
+     "produto_id": 24,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 15,
+     "quantidade": 9
+    },
+    {
+     "produto_id": 27,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 2,
+     "quantidade": 7
+    },
+    {
+     "produto_id": 22,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 6,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 3,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 20,
+   "cliente_id": 7,
+   "status": "enviado",
+   "evento": "Inauguração Hotel",
+   "criado_dias": -7,
+   "retirada_dias": 7,
+   "devolucao_dias": 11,
+   "desconto": 0.0,
+   "observacoes": "",
+   "itens": [
+    {
+     "produto_id": 18,
+     "quantidade": 6
+    },
+    {
+     "produto_id": 27,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 22,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 23,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 6,
+     "quantidade": 16
+    },
+    {
+     "produto_id": 30,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 4,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 21,
+   "cliente_id": 5,
+   "status": "aprovado",
+   "evento": "Festa Junina Colégio",
+   "criado_dias": -4,
+   "retirada_dias": 14,
+   "devolucao_dias": 18,
+   "desconto": 0.0,
+   "observacoes": "Entrega e montagem inclusas.",
+   "itens": [
+    {
+     "produto_id": 2,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 25,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 24,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 15,
+     "quantidade": 9
+    },
+    {
+     "produto_id": 30,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 22,
+   "cliente_id": 6,
+   "status": "rascunho",
+   "evento": "Inauguração Agência",
+   "criado_dias": -4,
+   "retirada_dias": 11,
+   "devolucao_dias": 13,
+   "desconto": 0.0,
+   "observacoes": "",
+   "itens": [
+    {
+     "produto_id": 5,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 6,
+     "quantidade": 8
+    },
+    {
+     "produto_id": 1,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 4,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 18,
+     "quantidade": 12
+    },
+    {
+     "produto_id": 23,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 24,
+     "quantidade": 4
+    }
+   ]
+  },
+  {
+   "id": 23,
+   "cliente_id": 7,
+   "status": "aprovado",
+   "evento": "Chá de Bebê Hotel",
+   "criado_dias": -1,
+   "retirada_dias": 24,
+   "devolucao_dias": 28,
+   "desconto": 150.0,
+   "observacoes": "Retirada pelo cliente.",
+   "itens": [
+    {
+     "produto_id": 26,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 15,
+     "quantidade": 7
+    },
+    {
+     "produto_id": 23,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 9,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 24,
+   "cliente_id": 5,
+   "status": "aprovado",
+   "evento": "Casamento Colégio",
+   "criado_dias": 1,
+   "retirada_dias": 18,
+   "devolucao_dias": 20,
+   "desconto": 0.0,
+   "observacoes": "",
+   "itens": [
+    {
+     "produto_id": 3,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 1,
+     "quantidade": 7
+    },
+    {
+     "produto_id": 15,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 29,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 30,
+     "quantidade": 1
+    }
+   ]
+  },
+  {
+   "id": 25,
+   "cliente_id": 7,
+   "status": "aprovado",
+   "evento": "Feira de Ciências Hotel",
+   "criado_dias": 4,
+   "retirada_dias": 14,
+   "devolucao_dias": 15,
+   "desconto": 0.0,
+   "observacoes": "Montagem às 14h.",
+   "itens": [
+    {
+     "produto_id": 4,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 23,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 2,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 26,
+     "quantidade": 11
+    }
+   ]
+  },
+  {
+   "id": 26,
+   "cliente_id": 8,
+   "status": "rascunho",
+   "evento": "Feira de Ciências Atlética",
+   "criado_dias": 5,
+   "retirada_dias": 16,
+   "devolucao_dias": 19,
+   "desconto": 100.0,
+   "observacoes": "Montagem às 14h.",
+   "itens": [
+    {
+     "produto_id": 29,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 28,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 25,
+     "quantidade": 3
+    }
+   ]
+  },
+  {
+   "id": 27,
+   "cliente_id": 6,
+   "status": "enviado",
+   "evento": "Festa Junina Agência",
+   "criado_dias": 7,
+   "retirada_dias": 19,
+   "devolucao_dias": 22,
+   "desconto": 0.0,
+   "observacoes": "Retirada pelo cliente.",
+   "itens": [
+    {
+     "produto_id": 13,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 16,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 22,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 19,
+     "quantidade": 3
+    }
+   ]
+  },
+  {
+   "id": 28,
+   "cliente_id": 4,
+   "status": "enviado",
+   "evento": "Aniversário Studio",
+   "criado_dias": 11,
+   "retirada_dias": 21,
+   "devolucao_dias": 23,
+   "desconto": 0.0,
+   "observacoes": "",
+   "itens": [
+    {
+     "produto_id": 1,
+     "quantidade": 7
+    },
+    {
+     "produto_id": 10,
+     "quantidade": 4
+    },
+    {
+     "produto_id": 19,
+     "quantidade": 5
+    }
+   ]
+  },
+  {
+   "id": 29,
+   "cliente_id": 9,
+   "status": "rascunho",
+   "evento": "Chá de Bebê Mariana",
+   "criado_dias": 15,
+   "retirada_dias": 28,
+   "devolucao_dias": 31,
+   "desconto": 200.0,
+   "observacoes": "Entrega e montagem inclusas.",
+   "itens": [
+    {
+     "produto_id": 13,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 5,
+     "quantidade": 12
+    },
+    {
+     "produto_id": 14,
+     "quantidade": 9
+    },
+    {
+     "produto_id": 7,
+     "quantidade": 3
+    },
+    {
+     "produto_id": 25,
+     "quantidade": 3
+    }
+   ]
+  },
+  {
+   "id": 30,
+   "cliente_id": 11,
+   "status": "enviado",
+   "evento": "Aniversário Camila",
+   "criado_dias": 20,
+   "retirada_dias": 40,
+   "devolucao_dias": 41,
+   "desconto": 200.0,
+   "observacoes": "Montagem às 14h.",
+   "itens": [
+    {
+     "produto_id": 28,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 10,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 12,
+     "quantidade": 6
+    },
+    {
+     "produto_id": 22,
+     "quantidade": 1
+    },
+    {
+     "produto_id": 18,
+     "quantidade": 6
+    },
+    {
+     "produto_id": 25,
+     "quantidade": 2
+    },
+    {
+     "produto_id": 30,
+     "quantidade": 4
+    }
+   ]
+  }
+ ],
+ "pagamentos": [
+  {
+   "orcamento_id": 1,
+   "vencimento_dias": -169,
+   "pago_dias": -172,
+   "forma": "pix"
+  },
+  {
+   "orcamento_id": 2,
+   "vencimento_dias": -167,
+   "pago_dias": -168,
+   "forma": "cartao"
+  },
+  {
+   "orcamento_id": 3,
+   "vencimento_dias": -144,
+   "pago_dias": -142,
+   "forma": "boleto"
+  },
+  {
+   "orcamento_id": 4,
+   "vencimento_dias": -150,
+   "pago_dias": -149,
+   "forma": "pix"
+  },
+  {
+   "orcamento_id": 5,
+   "vencimento_dias": -127,
+   "pago_dias": -124,
+   "forma": "cartao"
+  },
+  {
+   "orcamento_id": 6,
+   "vencimento_dias": -135,
+   "pago_dias": -134,
+   "forma": "cartao"
+  },
+  {
+   "orcamento_id": 7,
+   "vencimento_dias": -79,
+   "pago_dias": -83,
+   "forma": "boleto"
+  },
+  {
+   "orcamento_id": 8,
+   "vencimento_dias": -67,
+   "pago_dias": -64,
+   "forma": "pix"
+  },
+  {
+   "orcamento_id": 9,
+   "vencimento_dias": -60,
+   "pago_dias": -59,
+   "forma": "cartao"
+  },
+  {
+   "orcamento_id": 10,
+   "vencimento_dias": -53,
+   "pago_dias": null,
+   "forma": null
+  },
+  {
+   "orcamento_id": 11,
+   "vencimento_dias": -56,
+   "pago_dias": -56,
+   "forma": "pix"
+  },
+  {
+   "orcamento_id": 12,
+   "vencimento_dias": -56,
+   "pago_dias": 0,
+   "forma": "pix"
+  },
+  {
+   "orcamento_id": 13,
+   "vencimento_dias": -36,
+   "pago_dias": 0,
+   "forma": "cartao"
+  },
+  {
+   "orcamento_id": 17,
+   "vencimento_dias": 4,
+   "pago_dias": null,
+   "forma": null
+  },
+  {
+   "orcamento_id": 18,
+   "vencimento_dias": -1,
+   "pago_dias": null,
+   "forma": null
+  },
+  {
+   "orcamento_id": 21,
+   "vencimento_dias": 14,
+   "pago_dias": null,
+   "forma": null
+  },
+  {
+   "orcamento_id": 23,
+   "vencimento_dias": 24,
+   "pago_dias": null,
+   "forma": null
+  },
+  {
+   "orcamento_id": 24,
+   "vencimento_dias": 18,
+   "pago_dias": null,
+   "forma": null
+  },
+  {
+   "orcamento_id": 25,
+   "vencimento_dias": 14,
+   "pago_dias": null,
+   "forma": null
+  }
+ ]
+}

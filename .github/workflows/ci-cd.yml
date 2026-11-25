@@ -1,0 +1,58 @@
+# CI/CD da demonstração.
+#  - Em pull request e em push para outras branches: roda os testes e confere o build.
+#  - Em push na main: roda os testes, compila e publica no GitHub Pages.
+#
+# Configuração única no GitHub:
+#  1) Settings > Pages > Source = "GitHub Actions"
+#  2) Settings > Secrets and variables > Actions > Variables > IA_API_URL = https://SEU-SERVICO.onrender.com
+#     (URL da API Python da Lumi. Sem ela, o chat da demonstração responde "indisponível".)
+name: CI/CD
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  testar:
+    name: Testar e compilar
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm test
+      - name: Compilar
+        run: npm run build
+        env:
+          VITE_BASE: /${{ github.event.repository.name }}/
+          VITE_IA_API_URL: ${{ vars.IA_API_URL }}
+      - uses: actions/upload-pages-artifact@v3
+        if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+        with:
+          path: dist
+
+  publicar:
+    name: Publicar no GitHub Pages
+    needs: testar
+    if: github.ref == 'refs/heads/main' && github.event_name != 'pull_request'
+    runs-on: ubuntu-latest
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deploy.outputs.page_url }}
+    steps:
+      - id: deploy
+        uses: actions/deploy-pages@v4

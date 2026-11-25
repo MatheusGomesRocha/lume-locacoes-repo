@@ -1,0 +1,25 @@
+@import '@fontsource-variable/bricolage-grotesque';
+@import '@fontsource-variable/figtree';
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html { -webkit-font-smoothing: antialiased; }
+  body { @apply bg-gelo-50 font-sans text-tinta; }
+  h1, h2, h3 { @apply font-display; }
+  :focus-visible { @apply outline-none ring-2 ring-lume-500 ring-offset-2 ring-offset-gelo-50; }
+}
+
+@layer components {
+  .entrada {
+    @apply w-full rounded-xl border border-gelo-300 bg-white px-3.5 py-2.5 text-[15px] text-tinta placeholder:text-tinta-mute
+      transition-colors focus:border-lume-500 focus:outline-none focus:ring-2 focus:ring-lume-500/25 disabled:bg-gelo-100 disabled:text-tinta-mute;
+  }
+  .entrada-erro { @apply border-red-400 focus:border-red-500 focus:ring-red-500/20; }
+  .cartao { @apply rounded-2xl border border-gelo-200 bg-white shadow-card; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
+}
