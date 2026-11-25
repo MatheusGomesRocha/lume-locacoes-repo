@@ -1,4 +1,4 @@
-import { atrasoDeDigitacao, criarClienteChat, RESPOSTA_INDISPONIVEL } from './chat'
+import { atrasoDeDigitacao, criarClienteChat, montarContexto, RESPOSTA_INDISPONIVEL } from './chat'
 
 describe('atrasoDeDigitacao', () => {
   it('respostas curtas demoram menos que longas', () => {
@@ -59,5 +59,38 @@ describe('cliente do chat', () => {
   it('estoura o tempo limite e responde "indisponível"', async () => {
     const lento = ((_u: string, i: RequestInit) => new Promise((_, rej) => i.signal!.addEventListener('abort', () => rej(new Error('abort'))))) as unknown as typeof fetch
     expect(await criarClienteChat({ tipo: 'direto', url: 'http://ia' }, lento, 20).perguntar('x')).toEqual(RESPOSTA_INDISPONIVEL)
+  })
+})
+
+describe('contexto da conversa', () => {
+  it('perguntar envia historico e ultimo_id quando há contexto', async () => {
+    const corpos: string[] = []
+    const f = (async (_u: string, i: RequestInit) => {
+      corpos.push(String(i.body))
+      return { status: 200, ok: true, json: async () => ({ encontrou: true, resposta: 'Oi', fonte: null, confianca: 1, relacionadas: [] }) }
+    }) as unknown as typeof fetch
+    const cliente = criarClienteChat({ tipo: 'direto', url: 'http://ia' }, f)
+    await cliente.perguntar('mas eu quero excluir', { historico: ['e produtos?'], ultimoId: 'prod-excluir' })
+    await cliente.perguntar('oi', { historico: [], ultimoId: null })
+    expect(JSON.parse(corpos[0])).toEqual({ pergunta: 'mas eu quero excluir', historico: ['e produtos?'], ultimo_id: 'prod-excluir' })
+    expect(JSON.parse(corpos[1])).toEqual({ pergunta: 'oi' })
+  })
+
+  it('montarContexto pega as últimas 3 perguntas do usuário e a última resposta da Lumi', () => {
+    const msgs = [
+      { autor: 'lumi' as const, texto: 'Oi!' },
+      { autor: 'usuario' as const, texto: 'p1' },
+      { autor: 'lumi' as const, texto: 'r1', fonteId: 'a' },
+      { autor: 'usuario' as const, texto: 'p2' },
+      { autor: 'lumi' as const, texto: 'r2', fonteId: 'b' },
+      { autor: 'usuario' as const, texto: 'p3' },
+      { autor: 'usuario' as const, texto: 'p4' },
+    ]
+    expect(montarContexto(msgs)).toEqual({ historico: ['p2', 'p3', 'p4'], ultimoId: 'b' })
+  })
+
+  it('montarContexto: sem conversa ou quando a última resposta não achou nada, não há ultimoId', () => {
+    expect(montarContexto([{ autor: 'lumi', texto: 'Oi!' }])).toEqual({ historico: [], ultimoId: null })
+    expect(montarContexto([{ autor: 'usuario', texto: 'x' }, { autor: 'lumi', texto: 'não achei', fonteId: null }])).toEqual({ historico: ['x'], ultimoId: null })
   })
 })

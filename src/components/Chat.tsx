@@ -1,6 +1,6 @@
 import { ArrowUp, Sparkles } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import { atrasoDeDigitacao } from '../lib/chat'
+import { atrasoDeDigitacao, montarContexto } from '../lib/chat'
 import { useServicos } from '../lib/servicos'
 import type { RespostaChat } from '../types'
 import { Lumi } from './Lumi'
@@ -11,6 +11,7 @@ interface Mensagem {
   texto: string
   relacionadas?: RespostaChat['relacionadas']
   naoEncontrou?: boolean
+  fonteId?: string | null
 }
 
 const esperarPadrao = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
@@ -62,18 +63,20 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
   async function enviar(pergunta: string) {
     const limpa = pergunta.trim()
     if (limpa.length < 2 || digitando) return
+    // O contexto é o que veio ANTES desta pergunta, então é montado antes de ela entrar na lista.
+    const contexto = montarContexto(mensagens)
     setTexto('')
     setSugestoes([])
     setMensagens((m) => [...m, { id: proximoId.current++, autor: 'usuario', texto: limpa }])
     setDigitando(true)
 
     const inicio = Date.now()
-    const resposta = await chat.perguntar(limpa)
+    const resposta = await chat.perguntar(limpa, contexto)
     const restante = Math.max(0, atraso(resposta.resposta) - (Date.now() - inicio))
     await esperar(restante)
 
     setDigitando(false)
-    setMensagens((m) => [...m, { id: proximoId.current++, autor: 'lumi', texto: resposta.resposta, relacionadas: resposta.relacionadas, naoEncontrou: !resposta.encontrou }])
+    setMensagens((m) => [...m, { id: proximoId.current++, autor: 'lumi', texto: resposta.resposta, relacionadas: resposta.relacionadas, naoEncontrou: !resposta.encontrou, fonteId: resposta.fonte?.id ?? null }])
   }
 
   function aoEnviar(e: FormEvent) {

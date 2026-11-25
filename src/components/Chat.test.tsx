@@ -96,4 +96,20 @@ describe('Chat com a Lumi', () => {
     await userEvent.keyboard('{Enter}')
     expect(campo.value).toBe('')
   })
+
+  it('envia o contexto da conversa: perguntas anteriores e a última resposta', async () => {
+    const chat = chatFalso((p) => ({ fonte: { id: p.includes('produtos') ? 'prod-excluir' : 'orc-excluir', modulo: 'x', pergunta: 'y' } }))
+    montar(chat)
+    const campo = screen.getByLabelText('Sua pergunta')
+
+    await userEvent.type(campo, 'mas e pra excluir produtos?')
+    await userEvent.keyboard('{Enter}')
+    await screen.findByText('Resposta de teste.')
+    await userEvent.type(campo, 'mas eu quero excluir')
+    await userEvent.keyboard('{Enter}')
+    await waitFor(() => expect(chat.perguntas).toHaveLength(2))
+
+    expect(chat.contextos[0]).toEqual({ historico: [], ultimoId: null })
+    expect(chat.contextos[1]).toEqual({ historico: ['mas e pra excluir produtos?'], ultimoId: 'prod-excluir' })
+  })
 })

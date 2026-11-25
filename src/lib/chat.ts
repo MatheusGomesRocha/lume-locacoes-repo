@@ -18,9 +18,27 @@ export const RESPOSTA_INDISPONIVEL: RespostaChat = {
   relacionadas: [],
 }
 
+/** O que veio antes na conversa. A API não guarda nada: o front manda isto junto de cada pergunta. */
+export interface ContextoChat {
+  historico: string[]
+  ultimoId?: string | null
+}
+
 export interface ClienteChat {
   sugestoes(): Promise<string[]>
-  perguntar(pergunta: string): Promise<RespostaChat>
+  perguntar(pergunta: string, contexto?: ContextoChat): Promise<RespostaChat>
+}
+
+const MAX_PERGUNTAS_NO_CONTEXTO = 3
+
+/**
+ * Monta o contexto a partir das mensagens já trocadas (antes da pergunta nova):
+ * as últimas perguntas do usuário e o id da resposta que a Lumi deu por último.
+ */
+export function montarContexto(mensagens: { autor: 'usuario' | 'lumi'; texto: string; fonteId?: string | null }[]): ContextoChat {
+  const historico = mensagens.filter((m) => m.autor === 'usuario').map((m) => m.texto).slice(-MAX_PERGUNTAS_NO_CONTEXTO)
+  const ultimaDaLumi = [...mensagens].reverse().find((m) => m.autor === 'lumi')
+  return { historico, ultimoId: ultimaDaLumi?.fonteId ?? null }
 }
 
 type Config = { tipo: 'direto'; url: string } | { tipo: 'laravel'; url: string }
@@ -57,9 +75,12 @@ export function criarClienteChat(config: Config, buscar: typeof fetch = (...a) =
       }
     },
 
-    async perguntar(pergunta) {
+    async perguntar(pergunta, contexto) {
       try {
-        const r = await chamar('/chat', { method: 'POST', body: JSON.stringify({ pergunta }) })
+        const corpo: Record<string, unknown> = { pergunta }
+        if (contexto?.historico.length) corpo.historico = contexto.historico
+        if (contexto?.ultimoId) corpo.ultimo_id = contexto.ultimoId
+        const r = await chamar('/chat', { method: 'POST', body: JSON.stringify(corpo) })
         if (r.status === 429) {
           return { ...RESPOSTA_INDISPONIVEL, resposta: 'Muitas perguntas em pouco tempo. Aguarde um minuto e tente de novo.' }
         }

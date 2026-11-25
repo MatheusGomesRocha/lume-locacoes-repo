@@ -93,4 +93,5 @@ export interface RespostaChat {
   fonte: { id: string; modulo: string; pergunta: string } | null
   confianca: number
   relacionadas: { id: string; pergunta: string }[]
+  usou_contexto?: boolean
 }
