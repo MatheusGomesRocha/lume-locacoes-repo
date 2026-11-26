@@ -25,7 +25,7 @@ interface Mensagem {
 
 const esperarPadrao = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
 
-const SAUDACAO = 'Oi! Eu sou a Lumi. Posso te explicar como usar o sistema: orçamentos, financeiro, produtos e clientes. O que você quer saber?'
+const SAUDACAO = 'Oi! Eu sou a Lumi. Posso te explicar como usar o sistema: orçamentos, financeiro, produtos, clientes, usuários e permissões. O que você quer saber?'
 
 /** Três pontinhos pulando, como o "digitando…" do WhatsApp. */
 export function Digitando() {
