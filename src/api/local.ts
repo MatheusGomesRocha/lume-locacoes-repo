@@ -7,6 +7,8 @@ import { hojeISO } from '../lib/format'
 import { calcularFaltas, calcularTotal, diarias, podeAprovar, podeCancelar, podeEditar, podeEnviar, podeExcluir, podeFinalizar, proximoNumero } from '../lib/regras'
 import { STATUS_ORCAMENTO } from '../types'
 import type { ChatLog, Cliente, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, Resumo, StatusOrcamento } from '../types'
+import { criarAcessoLocal } from './acesso'
+import { protegerApi } from './protegida'
 import { ApiError, type Api, type FiltroPagamento } from './tipos'
 
 export const CHAVE_STORAGE = 'lume:v1'
@@ -78,9 +80,22 @@ export interface OpcoesLocal {
   storage?: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'>
   agora?: () => Date
   seed?: Seed
+  /** Confere permissões a cada ação (padrão). Só os testes das regras de negócio desligam. */
+  protegida?: boolean
+  /** E-mail já logado ao criar (testes). */
+  sessaoInicial?: string
 }
 
-export function criarApiLocal({ storage = localStorage, agora = () => new Date(), seed = seedPadrao as unknown as Seed }: OpcoesLocal = {}): Api {
+export function criarApiLocal({ storage = localStorage, agora = () => new Date(), seed = seedPadrao as unknown as Seed, protegida = true, sessaoInicial }: OpcoesLocal = {}): Api {
+  const acesso = criarAcessoLocal({ storage, sessaoInicial })
+  const base = criarApiDeDados({ storage, agora, seed })
+  const completa: Api = { ...base, auth: acesso.auth, usuarios: acesso.usuarios, grupos: acesso.grupos }
+  return protegida ? protegerApi(completa, acesso.permissoesAtuais) : completa
+}
+
+type ApiDeDados = Omit<Api, 'auth' | 'usuarios' | 'grupos'>
+
+function criarApiDeDados({ storage, agora, seed }: { storage: NonNullable<OpcoesLocal['storage']>; agora: () => Date; seed: Seed }): ApiDeDados {
   function ler(): Banco {
     const bruto = storage.getItem(CHAVE_STORAGE)
     if (bruto) {

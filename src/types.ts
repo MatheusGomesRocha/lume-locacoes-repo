@@ -138,3 +138,45 @@ export interface ChatLog {
 }
 export type ChatLogForm = Omit<ChatLog, 'id' | 'criado_em' | 'feedback' | 'desfecho' | 'usuario'>
 export type ChatLogAjuste = Partial<Pick<ChatLog, 'feedback' | 'desfecho'>>
+
+// ---------------------------------------------------------------------------
+// Acesso: usuários, grupos e permissões
+// ---------------------------------------------------------------------------
+export type Papel = 'master' | 'admin' | 'usuario'
+export const ROTULO_PAPEL: Record<Papel, string> = { master: 'Master', admin: 'Administrador', usuario: 'Usuário' }
+
+export interface Usuario {
+  id: number
+  nome: string
+  email: string
+  papel: Papel
+  grupo_id: number
+  grupo?: { id: number; nome: string }
+  ativo: boolean
+}
+export interface UsuarioForm {
+  nome: string
+  email: string
+  papel: Papel
+  grupo_id: number
+  ativo: boolean
+  /** Obrigatória ao criar; ao editar, só se for trocar. */
+  senha?: string
+}
+export interface Grupo {
+  id: number
+  nome: string
+  descricao: string | null
+  /** Chaves "modulo.acao". O grupo do master tem todas e não pode ser alterado. */
+  permissoes: string[]
+  sistema: boolean
+  usuarios_count: number
+}
+export interface GrupoForm { nome: string; descricao: string | null; permissoes: string[] }
+
+/** Quem está logado e o que pode fazer. */
+export interface Sessao {
+  usuario: Usuario
+  permissoes: string[]
+}
+export interface MinhaContaForm { nome: string; email: string; senha_atual?: string; nova_senha?: string }

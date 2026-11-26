@@ -8,6 +8,7 @@ import { dataBR, moeda, rotuloForma } from '../lib/format'
 import type { Falta } from '../lib/regras'
 import { podeAprovar, podeCancelar, podeEditar, podeEnviar, podeExcluir, podeFinalizar } from '../lib/regras'
 import { useApi } from '../lib/servicos'
+import { useSessao } from '../lib/sessao'
 import { useCarregar } from '../lib/useCarregar'
 
 type Acao = 'enviar' | 'aprovar' | 'finalizar' | 'cancelar' | 'excluir'
@@ -21,6 +22,7 @@ const textos: Record<Acao, { titulo: string; texto: string; botao: string; perig
 
 export default function OrcamentoDetalhe() {
   const api = useApi()
+  const { pode } = useSessao()
   const navegar = useNavigate()
   const avisar = useAviso()
   const { id } = useParams()
@@ -59,12 +61,12 @@ export default function OrcamentoDetalhe() {
           <p className="mt-1 text-[15px] text-tinta-soft">{o.evento} · {o.cliente?.nome}</p>
         </div>
         <div className="flex flex-wrap gap-2">
-          {podeEditar(s) && <Link to={`/orcamentos/${o.id}/editar`}><Botao variante="secundario"><Pencil className="h-4 w-4" aria-hidden /> Editar</Botao></Link>}
-          {podeEnviar(s) && <Botao variante="secundario" onClick={() => setAcao('enviar')}><Send className="h-4 w-4" aria-hidden /> Marcar como enviado</Botao>}
-          {podeAprovar(s) && <Botao onClick={() => setAcao('aprovar')}><CheckCircle2 className="h-4 w-4" aria-hidden /> Aprovar</Botao>}
-          {podeFinalizar(s) && <Botao onClick={() => setAcao('finalizar')}><PackageCheck className="h-4 w-4" aria-hidden /> Finalizar</Botao>}
-          {podeCancelar(s) && <Botao variante="secundario" onClick={() => setAcao('cancelar')}><Ban className="h-4 w-4" aria-hidden /> Cancelar</Botao>}
-          {podeExcluir(s) && <Botao variante="fantasma" onClick={() => setAcao('excluir')}><Trash2 className="h-4 w-4" aria-hidden /> Excluir</Botao>}
+          {pode('orcamentos.editar') && podeEditar(s) && <Link to={`/orcamentos/${o.id}/editar`}><Botao variante="secundario"><Pencil className="h-4 w-4" aria-hidden /> Editar</Botao></Link>}
+          {pode('orcamentos.enviar') && podeEnviar(s) && <Botao variante="secundario" onClick={() => setAcao('enviar')}><Send className="h-4 w-4" aria-hidden /> Marcar como enviado</Botao>}
+          {pode('orcamentos.aprovar') && podeAprovar(s) && <Botao onClick={() => setAcao('aprovar')}><CheckCircle2 className="h-4 w-4" aria-hidden /> Aprovar</Botao>}
+          {pode('orcamentos.finalizar') && podeFinalizar(s) && <Botao onClick={() => setAcao('finalizar')}><PackageCheck className="h-4 w-4" aria-hidden /> Finalizar</Botao>}
+          {pode('orcamentos.cancelar') && podeCancelar(s) && <Botao variante="secundario" onClick={() => setAcao('cancelar')}><Ban className="h-4 w-4" aria-hidden /> Cancelar</Botao>}
+          {pode('orcamentos.excluir') && podeExcluir(s) && <Botao variante="fantasma" onClick={() => setAcao('excluir')}><Trash2 className="h-4 w-4" aria-hidden /> Excluir</Botao>}
         </div>
       </div>
 

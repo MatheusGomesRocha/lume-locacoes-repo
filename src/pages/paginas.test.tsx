@@ -1,6 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { renderizar, servicosDeTeste, chatFalso } from '../test/utils'
+import { criarApiLocal } from '../api/local'
+import { SENHA_DEMO } from '../api/acesso'
+import { renderizar, servicosDeTeste, chatFalso, memoria, HOJE } from '../test/utils'
 
 describe('Painel', () => {
   it('mostra indicadores, status e próximos eventos do seed', async () => {
@@ -231,5 +233,80 @@ describe('Assistente e navegação', () => {
   it('rota desconhecida volta ao painel', async () => {
     renderizar('/qualquer-coisa')
     expect(await screen.findByRole('heading', { name: 'Painel' })).toBeInTheDocument()
+  })
+})
+
+describe('Acesso', () => {
+  const semLogin = () => servicosDeTeste({ api: criarApiLocal({ storage: memoria(), agora: () => HOJE }) })
+  const entrar = async (email: string) => {
+    await userEvent.type(await screen.findByLabelText('E-mail'), email)
+    await userEvent.type(screen.getByLabelText('Senha'), SENHA_DEMO)
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+  }
+
+  it('sem login só aparece a tela de entrada; senha errada mostra erro', async () => {
+    renderizar('/clientes', semLogin())
+    await userEvent.type(await screen.findByLabelText('E-mail'), 'master@lume.com')
+    await userEvent.type(screen.getByLabelText('Senha'), 'errada1234')
+    await userEvent.click(screen.getByRole('button', { name: 'Entrar' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('E-mail ou senha incorretos.')
+    expect(screen.queryByRole('navigation', { name: 'Principal' })).toBeNull()
+  })
+
+  it('atendimento entra e só vê no menu o que o grupo permite', async () => {
+    renderizar('/', semLogin())
+    await entrar('atendimento@lume.com')
+    const menu = await screen.findByRole('navigation', { name: 'Principal' })
+    expect(within(menu).getByRole('link', { name: 'Orçamentos' })).toBeInTheDocument()
+    expect(within(menu).getByRole('link', { name: 'Clientes' })).toBeInTheDocument()
+    expect(within(menu).queryByRole('link', { name: 'Financeiro' })).toBeNull()
+    expect(within(menu).queryByRole('link', { name: 'Usuários' })).toBeNull()
+    expect(within(menu).queryByRole('link', { name: 'Grupos' })).toBeNull()
+  })
+
+  it('digitar a rota de uma tela sem permissão mostra aviso, não os dados', async () => {
+    const s = semLogin()
+    renderizar('/financeiro', s)
+    await entrar('atendimento@lume.com')
+    expect(await screen.findByText('Você não tem acesso a esta tela')).toBeInTheDocument()
+  })
+
+  it('sem permissão de excluir/criar, os botões não aparecem', async () => {
+    renderizar('/clientes', semLogin())
+    await entrar('atendimento@lume.com')
+    expect(await screen.findByRole('button', { name: 'Novo cliente' })).toBeInTheDocument()
+    expect(screen.getAllByRole('button', { name: /^Editar / }).length).toBeGreaterThan(0)
+    expect(screen.queryByRole('button', { name: /^Excluir / })).toBeNull()
+  })
+
+  it('o master vê Usuários e Grupos e cria um grupo com permissões', async () => {
+    renderizar('/grupos', semLogin())
+    await entrar('master@lume.com')
+    expect(await screen.findByRole('heading', { name: 'Grupos de permissões' })).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: 'Novo grupo' }))
+    const modal = await screen.findByRole('dialog', { name: 'Novo grupo' })
+    await userEvent.click(within(modal).getByRole('button', { name: 'Salvar grupo' }))
+    expect(await within(modal).findByText('O campo nome é obrigatório.')).toBeInTheDocument()
+    await userEvent.type(within(modal).getByLabelText('Nome do grupo'), 'Só leitura')
+    await userEvent.click(within(modal).getByRole('checkbox', { name: 'Clientes: Ver' }))
+    await userEvent.click(within(modal).getByRole('button', { name: 'Salvar grupo' }))
+    expect(await screen.findByText('Só leitura')).toBeInTheDocument()
+    expect(screen.getByText(/1 permissões · 0 usuários/)).toBeInTheDocument()
+  })
+
+  it('o admin vê Usuários, mas não Grupos; o grupo Master não tem botões de editar', async () => {
+    renderizar('/usuarios', semLogin())
+    await entrar('admin@lume.com')
+    expect(await screen.findByRole('heading', { name: 'Usuários' })).toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: 'Grupos' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Editar Master' })).toBeNull() // admin não mexe no master
+    expect(screen.getByRole('button', { name: 'Editar Bruno do Atendimento' })).toBeInTheDocument()
+  })
+
+  it('sair volta para a tela de entrada', async () => {
+    renderizar('/', semLogin())
+    await entrar('master@lume.com')
+    await userEvent.click(await screen.findByRole('button', { name: /Sair/ }))
+    expect(await screen.findByRole('button', { name: 'Entrar' })).toBeInTheDocument()
   })
 })

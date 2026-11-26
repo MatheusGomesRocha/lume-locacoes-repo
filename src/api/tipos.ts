@@ -1,5 +1,6 @@
 import type {
   ChatLog, ChatLogAjuste, ChatLogForm, TipoLog,
+  Grupo, GrupoForm, MinhaContaForm, Sessao, Usuario, UsuarioForm,
   Cliente, ClienteForm, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, ProdutoForm, Resumo, StatusOrcamento,
 } from '../types'
 import type { Falta } from '../lib/regras'
@@ -54,6 +55,30 @@ export interface Api {
   pagamentos: {
     listar(filtro?: FiltroPagamento): Promise<Pagamento[]>
     baixar(id: number, pagoEm: string, forma: FormaPagamento): Promise<Pagamento>
+  }
+  /** Login e sessão. */
+  auth: {
+    /** Espera o que for preciso para `salva()` responder (a demo carrega os usuários do navegador). */
+    pronta(): Promise<void>
+    /** Sessão guardada neste navegador, sem ir à rede. */
+    salva(): Sessao | null
+    entrar(email: string, senha: string): Promise<Sessao>
+    sair(): Promise<void>
+    /** Relê usuário e permissões (o grupo pode ter mudado desde o login). */
+    atualizar(): Promise<Sessao>
+    alterarMinhaConta(dados: MinhaContaForm): Promise<Sessao>
+  }
+  usuarios: {
+    listar(): Promise<Usuario[]>
+    criar(dados: UsuarioForm): Promise<Usuario>
+    atualizar(id: number, dados: UsuarioForm): Promise<Usuario>
+    excluir(id: number): Promise<void>
+  }
+  grupos: {
+    listar(): Promise<Grupo[]>
+    criar(dados: GrupoForm): Promise<Grupo>
+    atualizar(id: number, dados: GrupoForm): Promise<Grupo>
+    excluir(id: number): Promise<void>
   }
   /** Registro das conversas com o assistente. */
   chatLogs: {

@@ -1,18 +1,22 @@
-import { Banknote, Boxes, LayoutDashboard, Menu, MessageCircle, RotateCcw, ScrollText, History, Users, X } from 'lucide-react'
+import { Banknote, Boxes, History, KeyRound, LayoutDashboard, LogOut, Menu, MessageCircle, RotateCcw, ScrollText, ShieldCheck, UserCog, Users, X } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useServicos } from '../lib/servicos'
+import { useSessao } from '../lib/sessao'
 import { Launcher } from './Launcher'
 import { Confirmar, useAviso } from './ui'
 
-const itens = [
-  { para: '/', rotulo: 'Painel', Icone: LayoutDashboard, fim: true },
-  { para: '/orcamentos', rotulo: 'Orçamentos', Icone: ScrollText },
-  { para: '/financeiro', rotulo: 'Financeiro', Icone: Banknote },
-  { para: '/produtos', rotulo: 'Produtos', Icone: Boxes },
-  { para: '/clientes', rotulo: 'Clientes', Icone: Users },
-  { para: '/assistente', rotulo: 'Assistente', Icone: MessageCircle, fim: true },
-  { para: '/assistente/conversas', rotulo: 'Conversas', Icone: History },
+/** `permissao`: basta ter uma. `so: master` aparece só para o master. */
+const itens: { para: string; rotulo: string; Icone: typeof Users; fim?: boolean; permissao?: string[]; so?: 'master' }[] = [
+  { para: '/', rotulo: 'Painel', Icone: LayoutDashboard, fim: true, permissao: ['painel.ver'] },
+  { para: '/orcamentos', rotulo: 'Orçamentos', Icone: ScrollText, permissao: ['orcamentos.ver'] },
+  { para: '/financeiro', rotulo: 'Financeiro', Icone: Banknote, permissao: ['financeiro.ver'] },
+  { para: '/produtos', rotulo: 'Produtos', Icone: Boxes, permissao: ['produtos.ver'] },
+  { para: '/clientes', rotulo: 'Clientes', Icone: Users, permissao: ['clientes.ver'] },
+  { para: '/assistente', rotulo: 'Assistente', Icone: MessageCircle, fim: true, permissao: ['assistente.usar'] },
+  { para: '/assistente/conversas', rotulo: 'Conversas', Icone: History, permissao: ['assistente.conversas'] },
+  { para: '/usuarios', rotulo: 'Usuários', Icone: UserCog, permissao: ['usuarios.ver'] },
+  { para: '/grupos', rotulo: 'Grupos', Icone: ShieldCheck, so: 'master' },
 ]
 
 function Marca() {
@@ -33,6 +37,8 @@ export function Layout() {
   const [menu, setMenu] = useState(false)
   const [confirmando, setConfirmando] = useState(false)
   const { api } = useServicos()
+  const { sessao, pode, sair } = useSessao()
+  const visiveis = itens.filter((i) => (i.so ? sessao?.usuario.papel === i.so : !i.permissao || pode(...i.permissao)))
   const avisar = useAviso()
   const { pathname } = useLocation()
 
@@ -45,7 +51,7 @@ export function Layout() {
 
   const nav = (
     <nav className="mt-8 flex flex-1 flex-col gap-1" aria-label="Principal">
-      {itens.map(({ para, rotulo, Icone, fim }) => (
+      {visiveis.map(({ para, rotulo, Icone, fim }) => (
         <NavLink
           key={para}
           to={para}
@@ -63,8 +69,17 @@ export function Layout() {
           )}
         </NavLink>
       ))}
+      <div className="mt-auto space-y-3">
+      <div className="rounded-2xl bg-white/5 p-4">
+        <p className="truncate text-sm font-semibold text-white">{sessao?.usuario.nome}</p>
+        <p className="truncate text-xs text-white/55">{sessao?.usuario.grupo?.nome}</p>
+        <div className="mt-3 flex items-center gap-4 text-xs font-semibold text-lume-300">
+          <NavLink to="/conta" onClick={() => setMenu(false)} className="flex items-center gap-1.5 hover:text-lume-400"><KeyRound className="h-3.5 w-3.5" aria-hidden /> Minha conta</NavLink>
+          <button onClick={() => void sair()} className="flex items-center gap-1.5 hover:text-lume-400"><LogOut className="h-3.5 w-3.5" aria-hidden /> Sair</button>
+        </div>
+      </div>
       {api.modo === 'local' && (
-        <div className="mt-auto rounded-2xl bg-white/5 p-4">
+        <div className="rounded-2xl bg-white/5 p-4">
           <p className="text-sm font-semibold text-white">Versão de demonstração</p>
           <p className="mt-1 text-xs leading-relaxed text-white/60">Os dados ficam só neste navegador e são fictícios.</p>
           <button onClick={() => setConfirmando(true)} className="mt-3 flex items-center gap-1.5 text-xs font-semibold text-lume-300 hover:text-lume-400">
@@ -72,6 +87,7 @@ export function Layout() {
           </button>
         </div>
       )}
+      </div>
     </nav>
   )
 
@@ -100,7 +116,7 @@ export function Layout() {
         <div className="mx-auto max-w-6xl"><Outlet /></div>
       </main>
 
-      {pathname !== '/assistente' && <Launcher />}
+      {pathname !== '/assistente' && pode('assistente.usar') && <Launcher />}
       <Confirmar aberto={confirmando} titulo="Restaurar dados de exemplo?" texto="Tudo o que você cadastrou ou alterou nesta demonstração será apagado e os dados fictícios voltam ao início." rotuloConfirmar="Restaurar" aoConfirmar={() => void restaurar()} aoFechar={() => setConfirmando(false)} />
     </div>
   )

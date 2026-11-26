@@ -1,10 +1,15 @@
 import { createContext, useContext, type ReactNode } from 'react'
 import type { Servicos } from '../api'
+import { SessaoProvider } from './sessao'
 
 const Contexto = createContext<Servicos | null>(null)
 
 export function ServicosProvider({ servicos, children }: { servicos: Servicos; children: ReactNode }) {
-  return <Contexto.Provider value={servicos}>{children}</Contexto.Provider>
+  return (
+    <Contexto.Provider value={servicos}>
+      <SessaoProvider api={servicos.api}>{children}</SessaoProvider>
+    </Contexto.Provider>
+  )
 }
 
 export function useServicos(): Servicos {

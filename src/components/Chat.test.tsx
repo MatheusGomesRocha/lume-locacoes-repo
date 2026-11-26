@@ -2,7 +2,8 @@ import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ServicosProvider } from '../lib/servicos'
 import { AvisoProvider } from './ui'
-import { chatFalso, servicosDeTeste } from '../test/utils'
+import { criarApiLocal } from '../api/local'
+import { chatFalso, servicosDeTeste, memoria, HOJE } from '../test/utils'
 import { Chat } from './Chat'
 
 function montar(chat = chatFalso(), esperar: (ms: number) => Promise<void> = async () => {}, atraso: (r: string) => number = () => 1500) {
@@ -251,6 +252,16 @@ describe('cadastros e exclusões dentro do chat', () => {
   it('registro que não existe vira uma frase, sem botão de excluir', async () => {
     await abrir(acao('excluir_registro', { modulo: 'cliente', busca: 'Fulano Inexistente' }))
     expect(await screen.findByText('Não encontrei nenhum cliente com “Fulano Inexistente”.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Confirmar exclusão' })).toBeNull()
+  })
+
+  it('o assistente não faz o que o usuário não poderia fazer nas telas', async () => {
+    const api = criarApiLocal({ storage: memoria(), agora: () => HOJE, sessaoInicial: 'atendimento@lume.com' }) // grupo Atendimento: não exclui clientes
+    const chat = chatFalso({ encontrou: true, resposta: 'Vou excluir.', acoes: [{ nome: 'excluir_registro', args: { modulo: 'cliente', busca: 'Buffet' } }] })
+    render(<ServicosProvider servicos={{ api, chat }}><AvisoProvider><Chat esperar={async () => {}} atraso={() => 1} /></AvisoProvider></ServicosProvider>)
+    await userEvent.type(await screen.findByLabelText('Sua pergunta'), 'exclui o cliente Buffet')
+    await userEvent.click(screen.getByRole('button', { name: 'Enviar pergunta' }))
+    expect(await screen.findByText(/não tem permissão para fazer isso/)).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Confirmar exclusão' })).toBeNull()
   })
 })

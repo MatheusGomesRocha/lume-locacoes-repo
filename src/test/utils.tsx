@@ -1,5 +1,6 @@
 import { render } from '@testing-library/react'
 import { MemoryRouter } from 'react-router-dom'
+import { MASTER_EMAIL } from '../api/acesso'
 import { criarApiLocal } from '../api/local'
 import type { Servicos } from '../api'
 import App from '../App'
@@ -32,7 +33,7 @@ export function chatFalso(respostas: Partial<RespostaChat> | ((p: string) => Par
 }
 
 export function servicosDeTeste(extra: Partial<Servicos> = {}): Servicos {
-  return { api: criarApiLocal({ storage: memoria(), agora: () => HOJE }), chat: chatFalso(), ...extra }
+  return { api: criarApiLocal({ storage: memoria(), agora: () => HOJE, sessaoInicial: MASTER_EMAIL }), chat: chatFalso(), ...extra }
 }
 
 export function renderizar(rota = '/', servicos: Servicos = servicosDeTeste()) {

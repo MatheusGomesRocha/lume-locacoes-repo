@@ -3,11 +3,13 @@ import { Link, useSearchParams } from 'react-router-dom'
 import { Botao, Cabecalho, CaixaErro, Carregando, Selo, Vazio } from '../components/ui'
 import { dataBR, moeda, rotuloStatus } from '../lib/format'
 import { useApi } from '../lib/servicos'
+import { useSessao } from '../lib/sessao'
 import { useCarregar } from '../lib/useCarregar'
 import { STATUS_ORCAMENTO, type StatusOrcamento } from '../types'
 
 export default function Orcamentos() {
   const api = useApi()
+  const { pode } = useSessao()
   const [params, setParams] = useSearchParams()
   const status = (params.get('status') ?? '') as StatusOrcamento | ''
   const busca = params.get('q') ?? ''
@@ -22,7 +24,7 @@ export default function Orcamentos() {
 
   return (
     <>
-      <Cabecalho titulo="Orçamentos" descricao="Monte propostas, aprove e acompanhe cada locação." acoes={<Link to="/orcamentos/novo"><Botao><Plus className="h-4 w-4" aria-hidden /> Novo orçamento</Botao></Link>} />
+      <Cabecalho titulo="Orçamentos" descricao="Monte propostas, aprove e acompanhe cada locação." acoes={pode('orcamentos.criar') ? <Link to="/orcamentos/novo"><Botao><Plus className="h-4 w-4" aria-hidden /> Novo orçamento</Botao></Link> : undefined} />
 
       <div className="mb-4 space-y-3">
         <div className="relative max-w-md">

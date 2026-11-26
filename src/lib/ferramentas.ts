@@ -171,3 +171,27 @@ export async function excluir(api: Api, alvo: Alvo): Promise<void> {
   if (alvo.modulo === 'produto') return api.produtos.excluir(alvo.id)
   return api.orcamentos.excluir(alvo.id)
 }
+
+// ---------------------------------------------------------------------------
+// Permissões: o assistente nunca faz o que o usuário não poderia fazer nas telas
+// ---------------------------------------------------------------------------
+const PERMISSAO_DA_FERRAMENTA: Record<string, string> = {
+  resumo_painel: 'painel.ver',
+  consultar_orcamentos: 'orcamentos.ver',
+  consultar_clientes: 'clientes.ver',
+  consultar_produtos: 'produtos.ver',
+  consultar_cobrancas: 'financeiro.ver',
+  cadastrar_cliente: 'clientes.criar',
+  cadastrar_produto: 'produtos.criar',
+  cadastrar_orcamento: 'orcamentos.criar',
+}
+const MODULO_DA_EXCLUSAO: Record<string, string> = { cliente: 'clientes', produto: 'produtos', orcamento: 'orcamentos' }
+
+/** Permissão exigida por um pedido do assistente (`null` se a ferramenta é desconhecida). */
+export function permissaoDaChamada(c: Chamada): string | null {
+  if (c.nome === 'excluir_registro') {
+    const modulo = MODULO_DA_EXCLUSAO[String(c.args.modulo)]
+    return modulo ? `${modulo}.excluir` : null
+  }
+  return PERMISSAO_DA_FERRAMENTA[c.nome] ?? null
+}

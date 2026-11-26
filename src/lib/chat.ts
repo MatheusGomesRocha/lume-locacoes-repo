@@ -111,8 +111,9 @@ export function criarClienteChat(
       for (const consulta of primeira.consultas.slice(0, 3)) {
         try {
           resultados.push({ nome: consulta.nome, args: consulta.args, resultado: await executar(consulta) })
-        } catch {
-          resultados.push({ nome: consulta.nome, args: consulta.args, resultado: { erro: 'não foi possível consultar agora' } })
+        } catch (e) {
+          const semPermissao = (e as { status?: number }).status === 403
+          resultados.push({ nome: consulta.nome, args: consulta.args, resultado: { erro: semPermissao ? 'o usuário não tem permissão para ver estes dados' : 'não foi possível consultar agora' } })
         }
       }
       const segunda = await enviar({ ...corpo, resultados })

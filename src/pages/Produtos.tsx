@@ -5,12 +5,14 @@ import { FormProduto } from '../components/formularios/FormProduto'
 import { Botao, Cabecalho, CaixaErro, Carregando, Confirmar, Modal, Vazio, useAviso } from '../components/ui'
 import { moeda } from '../lib/format'
 import { useApi } from '../lib/servicos'
+import { useSessao } from '../lib/sessao'
 import { useCarregar } from '../lib/useCarregar'
 import type { Produto } from '../types'
 
 export default function Produtos() {
   const api = useApi()
   const avisar = useAviso()
+  const { pode } = useSessao()
   const [busca, setBusca] = useState('')
   const [categoria, setCategoria] = useState('')
   const todos = useCarregar(() => api.produtos.listar(), [api])
@@ -44,7 +46,7 @@ export default function Produtos() {
 
   return (
     <>
-      <Cabecalho titulo="Produtos" descricao="O acervo disponível para locação, com preço da diária e quantidade em estoque." acoes={<Botao onClick={() => abrir('novo')}><Plus className="h-4 w-4" aria-hidden /> Novo produto</Botao>} />
+      <Cabecalho titulo="Produtos" descricao="O acervo disponível para locação, com preço da diária e quantidade em estoque." acoes={pode('produtos.criar') ? <Botao onClick={() => abrir('novo')}><Plus className="h-4 w-4" aria-hidden /> Novo produto</Botao> : undefined} />
 
       <div className="mb-4 flex flex-wrap gap-3">
         <div className="relative min-w-60 flex-1 sm:max-w-md">
@@ -74,8 +76,8 @@ export default function Produtos() {
                     <td className="px-5 py-3.5 text-right font-semibold tabular-nums">{moeda(p.valor_diaria)}</td>
                     <td className="hidden px-5 py-3.5 text-right tabular-nums text-tinta-soft sm:table-cell">{p.quantidade} un.</td>
                     <td className="px-3 py-3.5"><div className="flex justify-end gap-1">
-                      <button onClick={() => abrir(p)} aria-label={`Editar ${p.nome}`} className="rounded-lg p-2 text-tinta-mute hover:bg-gelo-100 hover:text-tinta"><Pencil className="h-4 w-4" /></button>
-                      <button onClick={() => setExcluindo(p)} aria-label={`Excluir ${p.nome}`} className="rounded-lg p-2 text-tinta-mute hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>
+                      {pode('produtos.editar') && <button onClick={() => abrir(p)} aria-label={`Editar ${p.nome}`} className="rounded-lg p-2 text-tinta-mute hover:bg-gelo-100 hover:text-tinta"><Pencil className="h-4 w-4" /></button>}
+                      {pode('produtos.excluir') && <button onClick={() => setExcluindo(p)} aria-label={`Excluir ${p.nome}`} className="rounded-lg p-2 text-tinta-mute hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>}
                     </div></td>
                   </tr>
                 ))}

@@ -5,6 +5,7 @@ import { Botao, Cabecalho, Campo, CaixaErro, Carregando, Modal, Selo, Vazio, use
 import type { FiltroPagamento } from '../api/tipos'
 import { dataBR, hojeISO, moeda, rotuloForma } from '../lib/format'
 import { useApi } from '../lib/servicos'
+import { useSessao } from '../lib/sessao'
 import { useCarregar } from '../lib/useCarregar'
 import { FORMAS, type FormaPagamento, type Pagamento } from '../types'
 
@@ -13,6 +14,7 @@ const filtros: [FiltroPagamento, string][] = [['todos', 'Todas'], ['pendente', '
 export default function Financeiro() {
   const api = useApi()
   const avisar = useAviso()
+  const { pode } = useSessao()
   const [filtro, setFiltro] = useState<FiltroPagamento>('todos')
   const { dados, erro, carregando, recarregar } = useCarregar(() => api.pagamentos.listar(filtro), [api, filtro])
   const [baixando, setBaixando] = useState<Pagamento | null>(null)
@@ -71,7 +73,7 @@ export default function Financeiro() {
                       <td className="hidden px-5 py-3.5 text-tinta-soft md:table-cell">{dataBR(p.vencimento)}{p.pago_em && <span className="block text-sm text-tinta-mute">Pago em {dataBR(p.pago_em)}{p.forma ? ` · ${rotuloForma[p.forma]}` : ''}</span>}</td>
                       <td className="px-5 py-3.5 text-right font-semibold tabular-nums">{moeda(p.valor)}</td>
                       <td className="px-5 py-3.5"><Selo status={situacao(p)} /></td>
-                      <td className="px-5 py-3.5 text-right">{p.status === 'pendente' && <Botao pequeno variante="secundario" onClick={() => abrir(p)} aria-label={`Registrar pagamento do orçamento ${p.orcamento?.numero}`}>Registrar pagamento</Botao>}</td>
+                      <td className="px-5 py-3.5 text-right">{p.status === 'pendente' && pode('financeiro.baixar') && <Botao pequeno variante="secundario" onClick={() => abrir(p)} aria-label={`Registrar pagamento do orçamento ${p.orcamento?.numero}`}>Registrar pagamento</Botao>}</td>
                     </tr>
                   ))}
                 </tbody>

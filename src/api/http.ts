@@ -1,15 +1,25 @@
 import { ApiError, type Api } from './tipos'
+import type { Sessao } from '../types'
+
+export const CHAVE_TOKEN = 'lume:token:v1'
+export const CHAVE_SESSAO_HTTP = 'lume:sessao-http:v1'
+export const EVENTO_SESSAO_EXPIRADA = 'lume:sessao-expirada'
 
 /** Driver da versão real: chama a API Laravel. */
-export function criarApiHttp(baseUrl: string, buscar: typeof fetch = (...a) => fetch(...a)): Api {
+export function criarApiHttp(baseUrl: string, buscar: typeof fetch = (...a) => fetch(...a), storage: Pick<Storage, 'getItem' | 'setItem' | 'removeItem'> = localStorage): Api {
   const base = baseUrl.replace(/\/$/, '')
+  const token = () => storage.getItem(CHAVE_TOKEN)
+  const guardar = (t: string | null, s: Sessao | null) => {
+    if (t && s) { storage.setItem(CHAVE_TOKEN, t); storage.setItem(CHAVE_SESSAO_HTTP, JSON.stringify(s)) }
+    else { storage.removeItem(CHAVE_TOKEN); storage.removeItem(CHAVE_SESSAO_HTTP) }
+  }
 
   async function chamar<T>(metodo: string, caminho: string, corpo?: unknown): Promise<T> {
     let resp: Response
     try {
       resp = await buscar(base + caminho, {
         method: metodo,
-        headers: { Accept: 'application/json', ...(corpo !== undefined ? { 'Content-Type': 'application/json' } : {}) },
+        headers: { Accept: 'application/json', ...(token() ? { Authorization: `Bearer ${token()}` } : {}), ...(corpo !== undefined ? { 'Content-Type': 'application/json' } : {}) },
         body: corpo !== undefined ? JSON.stringify(corpo) : undefined,
       })
     } catch {
@@ -18,6 +28,8 @@ export function criarApiHttp(baseUrl: string, buscar: typeof fetch = (...a) => f
     if (resp.status === 204) return undefined as T
     const json = await resp.json().catch(() => ({}))
     if (!resp.ok) {
+      // token vencido ou revogado: limpa e avisa o app (login com e-mail errado também dá 401, mas aí não havia sessão)
+      if (resp.status === 401 && token()) { guardar(null, null); window.dispatchEvent(new Event(EVENTO_SESSAO_EXPIRADA)) }
       const campos = (json.errors ?? {}) as Record<string, string[]>
       const primeiro = Object.values(campos)[0]?.[0]
       throw new ApiError(primeiro ?? json.message ?? 'Algo deu errado. Tente novamente.', resp.status, json.detalhes ?? [], campos)
@@ -34,6 +46,44 @@ export function criarApiHttp(baseUrl: string, buscar: typeof fetch = (...a) => f
 
   return {
     modo: 'http',
+    auth: {
+      async pronta() {},
+      salva() {
+        try { return token() ? (JSON.parse(storage.getItem(CHAVE_SESSAO_HTTP) ?? 'null') as Sessao | null) : null } catch { return null }
+      },
+      async entrar(email, senha) {
+        const r = await chamar<Sessao & { token: string }>('POST', '/login', { email, senha })
+        const { token: t, ...sessao } = r
+        guardar(t, sessao)
+        return sessao
+      },
+      async sair() {
+        try { await chamar('POST', '/logout') } catch { /* sem rede ou token já vencido: sai do mesmo jeito */ }
+        guardar(null, null)
+      },
+      async atualizar() {
+        const s = await chamar<Sessao>('GET', '/eu')
+        guardar(token(), s)
+        return s
+      },
+      async alterarMinhaConta(d) {
+        const s = await chamar<Sessao>('PUT', '/eu', d)
+        guardar(token(), s)
+        return s
+      },
+    },
+    usuarios: {
+      listar: () => chamar('GET', '/usuarios'),
+      criar: (d) => chamar('POST', '/usuarios', d),
+      atualizar: (id, d) => chamar('PUT', `/usuarios/${id}`, d),
+      excluir: (id) => chamar('DELETE', `/usuarios/${id}`),
+    },
+    grupos: {
+      listar: () => chamar('GET', '/grupos'),
+      criar: (d) => chamar('POST', '/grupos', d),
+      atualizar: (id, d) => chamar('PUT', `/grupos/${id}`, d),
+      excluir: (id) => chamar('DELETE', `/grupos/${id}`),
+    },
     dashboard: () => chamar('GET', '/dashboard'),
     chatLogs: {
       listar: (f = {}) => chamar('GET', '/chat-logs' + qs({ tipo: f.tipo, feedback: f.feedback })),

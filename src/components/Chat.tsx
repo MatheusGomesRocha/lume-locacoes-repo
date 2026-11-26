@@ -1,6 +1,8 @@
 import { ArrowUp, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { atrasoDeDigitacao, montarContexto } from '../lib/chat'
+import { permissaoDaChamada } from '../lib/ferramentas'
+import { useSessao } from '../lib/sessao'
 import { ferramentaDaResposta, montarRegistro, tipoDaResposta } from '../lib/logs'
 import { useServicos } from '../lib/servicos'
 import { montarCartao, CartaoCadastro, CartaoExclusao, type Cartao, type Fim } from './CartoesChat'
@@ -50,6 +52,7 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
   atraso?: (resposta: string) => number
 }) {
   const { chat, api } = useServicos()
+  const { pode } = useSessao()
   const [mensagens, setMensagens] = useState<Mensagem[]>([{ id: 0, autor: 'lumi', texto: SAUDACAO }])
   const [sugestoes, setSugestoes] = useState<string[]>([])
   const [texto, setTexto] = useState('')
@@ -82,7 +85,11 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
     let texto = resposta.resposta
     let cartao: Cartao | undefined
     if (resposta.acoes?.length) {
-      const montado = await montarCartao(api, resposta.acoes[0])
+      const acao = resposta.acoes[0]
+      const exigida = permissaoDaChamada(acao)
+      const montado = !exigida || !pode(exigida)
+        ? { texto: 'Seu usuário não tem permissão para fazer isso. Peça a um administrador para liberar no seu grupo.' }
+        : await montarCartao(api, acao)
       if ('cartao' in montado) cartao = montado.cartao
       else texto = montado.texto
     }

@@ -3,7 +3,7 @@ import { ApiError } from '../api/tipos'
 import { HOJE, memoria } from '../test/utils'
 import { excluir, executarConsulta, localizarParaExcluir, MAX_LINHAS, prepararCadastro, semAcento } from './ferramentas'
 
-const nova = () => criarApiLocal({ storage: memoria(), agora: () => HOJE })
+const nova = () => criarApiLocal({ storage: memoria(), agora: () => HOJE, protegida: false })
 
 describe('semAcento', () => {
   it('tira acento, caixa e espaços das pontas', () => {

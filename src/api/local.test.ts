@@ -6,7 +6,7 @@ const memoria = () => {
   const m = new Map<string, string>()
   return { getItem: (k: string) => m.get(k) ?? null, setItem: (k: string, v: string) => void m.set(k, v), removeItem: (k: string) => void m.delete(k) }
 }
-const api = (seed?: Seed) => criarApiLocal({ storage: memoria(), agora: () => HOJE, seed })
+const api = (seed?: Seed) => criarApiLocal({ storage: memoria(), agora: () => HOJE, seed, protegida: false })
 
 const prod = (id: number, quantidade = 10, valor = 100) => ({ id, codigo: `P-${id}`, nome: `Produto ${id}`, categoria: 'Teste', descricao: null, valor_diaria: valor, valor_reposicao: 0, quantidade, ativo: true })
 const cli = (id: number, nome = `Cliente ${id}`) => ({ id, nome, tipo: 'PF' as const, documento: null, email: null, telefone: null, cidade: null, observacoes: null })
@@ -61,16 +61,16 @@ describe('seed padrão', () => {
 describe('persistência', () => {
   it('grava no storage e outra instância enxerga', async () => {
     const storage = memoria()
-    const a = criarApiLocal({ storage, agora: () => HOJE, seed: seedMini() })
+    const a = criarApiLocal({ storage, agora: () => HOJE, seed: seedMini(), protegida: false })
     await a.clientes.criar({ ...cli(0, 'Novo'), nome: 'Novo' } as never)
-    const b = criarApiLocal({ storage, agora: () => HOJE, seed: seedMini() })
+    const b = criarApiLocal({ storage, agora: () => HOJE, seed: seedMini(), protegida: false })
     expect((await b.clientes.listar()).map((c) => c.nome)).toContain('Novo')
     expect(storage.getItem(CHAVE_STORAGE)).toContain('Novo')
   })
   it('se o storage estiver corrompido, recomeça do exemplo', async () => {
     const storage = memoria()
     storage.setItem(CHAVE_STORAGE, '{quebrado')
-    expect(await criarApiLocal({ storage, agora: () => HOJE, seed: seedMini() }).clientes.listar()).toHaveLength(2)
+    expect(await criarApiLocal({ storage, agora: () => HOJE, seed: seedMini(), protegida: false }).clientes.listar()).toHaveLength(2)
   })
   it('restaurarExemplo descarta as mudanças', async () => {
     const a = api(seedMini())
@@ -211,7 +211,7 @@ describe('orçamentos: editar', () => {
   })
   it('preço do item fica congelado, item novo usa o preço atual', async () => {
     const storage = memoria()
-    const a = criarApiLocal({ storage, agora: () => HOJE, seed: seedMini() })
+    const a = criarApiLocal({ storage, agora: () => HOJE, seed: seedMini(), protegida: false })
     const o = await a.orcamentos.criar(form({ data_devolucao: '2026-12-10', itens: [{ produto_id: 1, quantidade: 1 }] }))
     await a.produtos.atualizar(1, { ...prod(1), valor_diaria: 999 } as never)
     await a.produtos.atualizar(2, { ...prod(2), valor_diaria: 70 } as never)
