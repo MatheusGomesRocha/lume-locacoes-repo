@@ -372,3 +372,23 @@ describe('Paginação das listas', () => {
     localStorage.clear()
   })
 })
+
+describe('Qualidade e custo da Lumi', () => {
+  it('mostra tokens, custo e taxa de acerto das conversas, por tipo e por versão', async () => {
+    const api = criarApiLocal({ storage: memoria(), agora: () => HOJE, sessaoInicial: undefined })
+    await api.auth.entrar(MASTER_EMAIL, SENHA_DEMO)
+    const base = { resposta: 'ok', fonte_id: null, ferramenta: null, gerada_por_llm: true, em_cache: false, usou_contexto: false, latencia_ms: 200, voltas: 1 }
+    await api.chatLogs.registrar({ ...base, pergunta: 'quantos clientes?', tipo: 'consulta', tokens_entrada: 1000, tokens_saida: 100, custo_usd: 0.00014, versao: 'aaa1111' })
+    await api.chatLogs.registrar({ ...base, pergunta: 'como crio?', tipo: 'ajuda', gerada_por_llm: false, versao: 'aaa1111' })
+    await api.chatLogs.registrar({ ...base, pergunta: 'isso não existe', tipo: 'nao_encontrou', versao: 'bbb2222' })
+    renderizar('/assistente/conversas', servicosDeTeste({ api }))
+    await userEvent.click(await screen.findByRole('tab', { name: 'Qualidade e custo' }))
+    expect(await screen.findByText('Tokens gastos (total)')).toBeInTheDocument()
+    expect(screen.getAllByText('1.100').length).toBeGreaterThan(0) // 1000 de entrada + 100 de saída
+    expect(screen.getAllByText('67%').length).toBeGreaterThan(0) // 2 de 3 conversas resolvidas
+    const versoes = screen.getByRole('region', { name: 'Evolução entre versões' })
+    expect(within(versoes).getByText('aaa1111')).toBeInTheDocument()
+    expect(within(versoes).getByText('bbb2222')).toBeInTheDocument()
+    expect(screen.getByRole('region', { name: 'Por tipo de pergunta' })).toBeInTheDocument()
+  })
+})

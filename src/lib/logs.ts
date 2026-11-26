@@ -1,4 +1,4 @@
-import type { ChatLog, ChatLogForm, FaqItem, RespostaChat, TipoLog } from '../types'
+import type { ConsumoModelo, ChatLog, ChatLogForm, FaqItem, RespostaChat, TipoLog } from '../types'
 
 /**
  * A Lumi consultou o sistema mas disse que não achou/não sabe: para o registro isso é uma pergunta SEM resposta
@@ -28,6 +28,12 @@ export const ferramentaDaResposta = (r: RespostaChat): string | null => {
   return r.ferramentas?.[0] ?? r.acoes?.[0]?.nome ?? null
 }
 
+/** Soma o consumo de duas voltas da mesma pergunta (a consulta de dados faz duas idas à API). */
+export function somarConsumo(a?: ConsumoModelo, b?: ConsumoModelo): ConsumoModelo | undefined {
+  if (!a || !b) return a ?? b
+  return { chamadas: a.chamadas + b.chamadas, entrada: a.entrada + b.entrada, saida: a.saida + b.saida, custo_usd: Math.round((a.custo_usd + b.custo_usd) * 1e6) / 1e6 }
+}
+
 /** Monta o registro de uma pergunta. Guarda a ferramenta usada, mas nunca os dados que ela leu. */
 export function montarRegistro(pergunta: string, r: RespostaChat, texto: string, latenciaMs: number, ferramenta: string | null, tipo: TipoLog): ChatLogForm {
   return {
@@ -41,6 +47,10 @@ export function montarRegistro(pergunta: string, r: RespostaChat, texto: string,
     usou_contexto: !!r.usou_contexto,
     latencia_ms: Math.max(0, Math.round(latenciaMs)),
     voltas: r.voltas ?? 1,
+    tokens_entrada: r.consumo?.entrada ?? 0,
+    tokens_saida: r.consumo?.saida ?? 0,
+    custo_usd: r.consumo?.custo_usd ?? 0,
+    versao: r.versao ?? null,
   }
 }
 

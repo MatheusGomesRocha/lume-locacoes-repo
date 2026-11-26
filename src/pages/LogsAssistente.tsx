@@ -9,6 +9,7 @@ import { PERMISSAO_SO_MASTER } from '../lib/permissoes'
 import { useApi } from '../lib/servicos'
 import { useSessao } from '../lib/sessao'
 import { useCarregar } from '../lib/useCarregar'
+import { QualidadeLumi } from '../components/QualidadeLumi'
 import { usePaginaLocal } from '../lib/usePaginado'
 import { Paginacao } from '../components/Paginacao'
 import { MODULOS_FAQ, TIPOS_LOG, type FaqItem, type TipoLog } from '../types'
@@ -84,7 +85,7 @@ export default function LogsAssistente() {
   const [tipo, setTipo] = useState<TipoLog | ''>('')
   const [soRuins, setSoRuins] = useState(false)
   const [limpando, setLimpando] = useState(false)
-  const [aba, setAba] = useState<'conversas' | 'evolucao'>('conversas')
+  const [aba, setAba] = useState<'conversas' | 'qualidade' | 'evolucao'>('conversas')
   const { pode } = useSessao()
   const master = pode(PERMISSAO_SO_MASTER)
   const [respondendo, setRespondendo] = useState<{ item: FaqItem | null; pergunta: string } | null>(null)
@@ -140,16 +141,16 @@ export default function LogsAssistente() {
       <Cabecalho titulo="Conversas do assistente" descricao="O que foi perguntado, como foi respondido e quanto custou. Perguntas sem resposta mostram o que falta no FAQ."
         acoes={<Botao variante="secundario" onClick={() => setLimpando(true)} disabled={!r.total}><Trash2 className="h-4 w-4" aria-hidden /> Apagar registros</Botao>} />
 
-      {master && (
+      {(
         <div role="tablist" aria-label="Seções" className="mb-5 flex gap-2 border-b border-gelo-200">
-          {([['conversas', 'Conversas'], ['evolucao', 'Evolução da Lumi']] as const).map(([id, rotulo]) => (
+          {([['conversas', 'Conversas'], ['qualidade', 'Qualidade e custo'], ...(master ? [['evolucao', 'Evolução da Lumi']] : [])] as [typeof aba, string][]).map(([id, rotulo]) => (
             <button key={id} role="tab" aria-selected={aba === id} onClick={() => setAba(id)}
               className={`-mb-px border-b-2 px-4 py-2 text-[15px] font-semibold ${aba === id ? 'border-lume-600 text-lume-700' : 'border-transparent text-tinta-soft hover:text-tinta'}`}>{rotulo}</button>
           ))}
         </div>
       )}
 
-      {master && aba === 'evolucao' ? <EvolucaoMaster /> : todos.carregando ? <Carregando /> : todos.erro ? <CaixaErro mensagem={todos.erro} aoTentar={() => void todos.recarregar()} /> : (
+      {master && aba === 'evolucao' ? <EvolucaoMaster /> : aba === 'qualidade' ? (todos.carregando ? <Carregando /> : <QualidadeLumi logs={todos.dados ?? []} />) : todos.carregando ? <Carregando /> : todos.erro ? <CaixaErro mensagem={todos.erro} aoTentar={() => void todos.recarregar()} /> : (
         <>
           <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
             <Indicador rotulo="Perguntas" valor={r.total} detalhe={`${r.comModelo} usaram o modelo`} />
@@ -194,7 +195,7 @@ export default function LogsAssistente() {
                       <td className="px-5 py-3.5 text-sm">{ROTULO_TIPO[l.tipo]}{l.ferramenta ? <span className="block text-xs text-tinta-mute">{l.ferramenta}</span> : l.fonte_id ? <span className="block text-xs text-tinta-mute">{l.fonte_id}</span> : null}</td>
                       <td className="px-5 py-3.5 text-sm text-tinta-soft">
                         {ms(l.latencia_ms)}
-                        <span className="block text-xs text-tinta-mute">{[l.em_cache ? 'cache' : l.gerada_por_llm ? 'modelo' : 'FAQ', l.usou_contexto ? 'com contexto' : '', l.desfecho ?? ''].filter(Boolean).join(' · ')}</span>
+                        <span className="block text-xs text-tinta-mute">{[l.em_cache ? 'cache' : l.gerada_por_llm ? 'modelo' : 'FAQ', l.usou_contexto ? 'com contexto' : '', (l.tokens_entrada ?? 0) + (l.tokens_saida ?? 0) > 0 ? `${((l.tokens_entrada ?? 0) + (l.tokens_saida ?? 0)).toLocaleString('pt-BR')} tokens` : '', l.desfecho ?? ''].filter(Boolean).join(' · ')}</span>
                       </td>
                       <td className="px-5 py-3.5 text-sm">{l.feedback === 'positivo' ? 'Útil' : l.feedback === 'negativo' ? 'Ruim' : '—'}</td>
                     </tr>

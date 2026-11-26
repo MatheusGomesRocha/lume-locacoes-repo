@@ -1,6 +1,7 @@
 import type { Chamada, RespostaChat } from '../types'
 import type { SpecConsulta } from './catalogo'
 import { hojeISO } from './format'
+import { somarConsumo } from './logs'
 
 /**
  * Tempo de "digitando…" antes de mostrar a resposta, para parecer que o assistente está pesquisando.
@@ -137,19 +138,21 @@ export function criarClienteChat(
       // Consulta simples (sem agente): uma volta só; se ainda pedir consulta, desiste em vez de entrar em laço.
       if (!primeira.agente) {
         const segunda = await enviar({ ...corpo, resultados: await ler(primeira.consultas) })
-        return segunda.consultas?.length ? RESPOSTA_INDISPONIVEL : { ...segunda, voltas: 2, ferramentas: primeira.consultas.map((c) => c.nome) }
+        return segunda.consultas?.length ? RESPOSTA_INDISPONIVEL : { ...segunda, voltas: 2, ferramentas: primeira.consultas.map((c) => c.nome), consumo: somarConsumo(primeira.consumo, segunda.consumo) }
       }
 
       // Agente: cada volta devolve o estado da conversa junto dos resultados. Teto de voltas evita laço.
       let resposta = primeira
       const ferramentas: string[] = []
       let voltas = 1
+      let consumo = primeira.consumo
       while (resposta.consultas?.length && voltas <= MAX_VOLTAS_DO_AGENTE) {
         ferramentas.push(...resposta.consultas.map((c) => c.nome))
         resposta = await enviar({ ...corpo, agente: resposta.agente, resultados: await ler(resposta.consultas) })
+        consumo = somarConsumo(consumo, resposta.consumo)
         voltas += 1
       }
-      return resposta.consultas?.length ? RESPOSTA_INDISPONIVEL : { ...resposta, voltas, ferramentas }
+      return resposta.consultas?.length ? RESPOSTA_INDISPONIVEL : { ...resposta, voltas, ferramentas, consumo }
     },
   }
 }

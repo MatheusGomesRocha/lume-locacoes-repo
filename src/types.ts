@@ -113,6 +113,10 @@ export interface RespostaChat {
   acoes?: Chamada[]
   /** Conversa do agente em andamento (criar orçamento/cliente falando no chat). O front devolve este estado na próxima mensagem; `null`/ausente = terminou. */
   agente?: Record<string, unknown> | null
+  /** Tokens e custo estimado do modelo nesta volta (ausente quando a resposta não chamou o modelo). */
+  consumo?: ConsumoModelo
+  /** Versão da API que respondeu (commit publicado). */
+  versao?: string
   /** Respostas sugeridas pelo agente, mostradas como botões (clicar equivale a digitar). */
   opcoes?: string[]
   /** Gravações que o usuário JÁ confirmou com "sim" na conversa. É a única forma de o agente gravar algo. */
@@ -132,6 +136,8 @@ export interface FaqItem {
 }
 export type FaqForm = Omit<FaqItem, 'id' | 'criado_em'>
 export const MODULOS_FAQ = ['Orçamentos', 'Financeiro', 'Produtos', 'Clientes', 'Painel', 'Acesso', 'Assistente', 'Versão de demonstração']
+
+export interface ConsumoModelo { chamadas: number; entrada: number; saida: number; custo_usd: number }
 
 export type TipoLog = 'ajuda' | 'consulta' | 'cadastro' | 'exclusao' | 'nao_encontrou' | 'erro'
 export const TIPOS_LOG: TipoLog[] = ['ajuda', 'consulta', 'cadastro', 'exclusao', 'nao_encontrou', 'erro']
@@ -160,6 +166,12 @@ export interface ChatLog {
   usou_contexto: boolean
   latencia_ms: number
   voltas: number
+  /** Tokens gastos no modelo para responder (0 quando não usou o modelo) e o custo estimado em US$. */
+  tokens_entrada?: number
+  tokens_saida?: number
+  custo_usd?: number
+  /** Versão do assistente que respondeu (commit da API); null em registros antigos. */
+  versao?: string | null
   feedback: 'positivo' | 'negativo' | null
   desfecho: Desfecho | null
   usuario?: string | null
