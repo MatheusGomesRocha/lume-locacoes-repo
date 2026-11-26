@@ -75,7 +75,7 @@ export async function executarConsulta(api: Api, chamada: Chamada): Promise<unkn
     case 'localizar_produtos': {
       const ativos = await api.produtos.listar({ ativo: true })
       const buscas = Array.isArray(a.buscas) ? a.buscas.slice(0, 15) : []
-      return { itens: buscas.map((b) => ({ busca: String(b), linhas: ativos.filter((p) => contemTodas(p.nome, String(b)) || semAcento(p.codigo) === semAcento(String(b))).slice(0, 6).map((p) => ({ id: p.id, nome: p.nome, valor_diaria: p.valor_diaria })) })) }
+      return { itens: buscas.map((b) => ({ busca: String(b), linhas: ativos.filter((p) => contemTodas(p.nome, String(b), true) || semAcento(p.codigo) === semAcento(String(b))).slice(0, 6).map((p) => ({ id: p.id, nome: p.nome, codigo: p.codigo, valor_diaria: p.valor_diaria })) })) }
     }
     case 'verificar_disponibilidade': {
       // Só avisa: criar o rascunho não exige estoque (aprovar exige). Se não der para conferir, não bloqueia.
@@ -95,11 +95,17 @@ export async function executarConsulta(api: Api, chamada: Chamada): Promise<unkn
   }
 }
 
-/** Todas as palavras da busca aparecem no nome (sem acento, sem maiúsculas): "joao victor" acha "João Victor Lima". */
-function contemTodas(nome: string, busca: string): boolean {
-  const alvo = semAcento(nome)
-  const palavras = semAcento(busca).split(/\s+/).filter(Boolean)
-  return palavras.length > 0 && palavras.every((p) => alvo.includes(p))
+const singularizar = (w: string) => (w.length > 4 && w.endsWith('oes') ? `${w.slice(0, -3)}ao` : w.length > 3 && w.endsWith('s') && !w.endsWith('ss') ? w.slice(0, -1) : w)
+const palavras = (t: string, singular: boolean) => semAcento(t).split(/[^a-z0-9]+/).filter(Boolean).map((w) => (singular ? singularizar(w) : w))
+
+/**
+ * Cada palavra da busca é uma PALAVRA INTEIRA do nome (sem acento nem caixa, em qualquer ordem):
+ * "maria" não acha "Mariana" e "vitor" não acha "Vitória". `singular` (produtos) deixa "mesas" achar "Mesa redonda".
+ */
+function contemTodas(nome: string, busca: string, singular = false): boolean {
+  const alvo = new Set(palavras(nome, singular))
+  const q = palavras(busca, singular)
+  return q.length > 0 && q.every((p) => alvo.has(p))
 }
 
 // ---------------------------------------------------------------------------

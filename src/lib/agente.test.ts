@@ -16,10 +16,26 @@ describe('leituras do agente', () => {
     expect(await consulta(api, 'localizar_clientes', { busca: '   ' })).toEqual({ linhas: [] })
   })
 
+  it('a busca casa palavras inteiras: Maria não acha Mariana e Vitor não acha Vitória', async () => {
+    const api = nova()
+    const base = { tipo: 'PF' as const, documento: null, email: null, telefone: null, cidade: null, observacoes: null }
+    await api.clientes.criar({ ...base, nome: 'Mariana Albuquerque' })
+    await api.clientes.criar({ ...base, nome: 'Vitória Lima' })
+    await api.clientes.criar({ ...base, nome: 'Maria Souza' })
+    const achar = async (busca: string) => ((await consulta(api, 'localizar_clientes', { busca })) as { linhas: { nome: string }[] }).linhas.map((l) => l.nome)
+    expect(await achar('Maria')).toEqual(['Maria Souza'])
+    expect(await achar('Vitor')).toEqual([])
+    expect(await achar('Vitória')).toEqual(['Vitória Lima'])
+    expect(await achar('Marian')).toEqual([])
+    expect(await achar('albuquerque mariana')).toContain('Mariana Albuquerque')
+  })
+
   it('localizar_produtos devolve id e preço por busca, só de produtos ativos', async () => {
     const api = nova()
     const r = (await consulta(api, 'localizar_produtos', { buscas: ['refletor led', 'xyz'] })) as { itens: { busca: string; linhas: { id: number; valor_diaria: number }[] }[] }
-    expect(r.itens[0].linhas[0]).toMatchObject({ id: 1, valor_diaria: 85 })
+    expect(r.itens[0].linhas[0]).toMatchObject({ id: 1, valor_diaria: 85, codigo: expect.any(String) })
+    const plural = (await consulta(api, 'localizar_produtos', { buscas: ['refletor leds'] })) as { itens: { linhas: unknown[] }[] }
+    expect(plural.itens[0].linhas).toHaveLength(1)
     expect(r.itens[1]).toEqual({ busca: 'xyz', linhas: [] })
     await api.produtos.atualizar(1, { ...(await api.produtos.listar()).find((p) => p.id === 1)!, ativo: false })
     expect(((await consulta(api, 'localizar_produtos', { buscas: ['refletor led'] })) as { itens: { linhas: unknown[] }[] }).itens[0].linhas).toEqual([])
