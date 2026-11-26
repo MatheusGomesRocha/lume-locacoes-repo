@@ -70,3 +70,19 @@ describe('perguntas sem resposta (tela do master)', () => {
     expect(sugerirPergunta('   ')).toBe('')
   })
 })
+
+import { respondeuSemDados } from './logs'
+
+describe('consulta que não achou nada conta como pergunta sem resposta', () => {
+  it('reconhece as frases de "não achei" e não confunde com resposta boa', () => {
+    expect(respondeuSemDados('Não encontrei essa informação nos dados consultados.')).toBe(true)
+    expect(respondeuSemDados('Não consegui encontrar clientes nesse período.')).toBe(true)
+    expect(respondeuSemDados('Você tem 12 clientes. Nenhum deles é de Sobral.')).toBe(false)
+    expect(respondeuSemDados('Você tem 0 orçamentos aprovados.')).toBe(false)
+  })
+  it('uma consulta com essa resposta vira nao_encontrou; com dados, continua consulta', () => {
+    const r = { encontrou: true, resposta: '', fonte: null, confianca: 1, relacionadas: [], ferramentas: ['consultar_clientes'], voltas: 2 } as never
+    expect(tipoDaResposta(r, 'Não encontrei essa informação nos dados consultados.')).toBe('nao_encontrou')
+    expect(tipoDaResposta(r, 'Você tem 8 clientes.')).toBe('consulta')
+  })
+})

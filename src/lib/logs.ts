@@ -1,9 +1,18 @@
 import type { ChatLog, ChatLogForm, FaqItem, RespostaChat, TipoLog } from '../types'
 
+/**
+ * A Lumi consultou o sistema mas disse que não achou/não sabe: para o registro isso é uma pergunta SEM resposta
+ * (é o que os Agents precisam ver para propor uma consulta nova), não uma consulta bem-sucedida.
+ */
+export function respondeuSemDados(texto: string): boolean {
+  const t = texto.normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLowerCase()
+  return /\bnao (encontrei|consegui (encontrar|achar|responder|ver|consultar)|tenho (essa |a )?informacao|ha (dados|informacao)|sei informar|foi possivel)\b/.test(t)
+}
+
 /** Que tipo de interação foi esta, olhando só a resposta que a API devolveu. */
 export function tipoDaResposta(r: RespostaChat, resposta: string): TipoLog {
   if (r.agente || r.executar?.length || (r.ferramentas && r.ferramentas.some((n) => n.startsWith('localizar_') || n === 'verificar_disponibilidade'))) return 'cadastro'
-  if (r.voltas === 2 || r.ferramentas?.length || r.consultas?.length) return 'consulta'
+  if (r.voltas === 2 || r.ferramentas?.length || r.consultas?.length) return respondeuSemDados(resposta) ? 'nao_encontrou' : 'consulta'
   if (r.acoes?.[0]?.nome === 'excluir_registro') return 'exclusao'
   if (r.acoes?.length) return 'cadastro'
   if (r.confianca === 0 && !r.encontrou && r.fonte === null && resposta.includes('indispon')) return 'erro'
