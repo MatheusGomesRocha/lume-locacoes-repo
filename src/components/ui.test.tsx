@@ -77,6 +77,7 @@ describe('Avisos', () => {
     return <><button onClick={() => avisar('Salvo!')}>ok</button><button onClick={() => avisar('Falhou', 'erro')}>erro</button></>
   }
   it('mostra o aviso e some depois de alguns segundos', async () => {
+    vi.useRealTimers() // troca o relógio congelado do setup por timers falsos completos neste teste
     vi.useFakeTimers({ shouldAdvanceTime: true })
     render(<AvisoProvider><Disparador /></AvisoProvider>)
     await userEvent.click(screen.getByText('ok'))
