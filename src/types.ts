@@ -94,4 +94,5 @@ export interface RespostaChat {
   confianca: number
   relacionadas: { id: string; pergunta: string }[]
   usou_contexto?: boolean
+  gerada_por_llm?: boolean
 }
