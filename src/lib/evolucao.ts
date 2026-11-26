@@ -47,3 +47,45 @@ export async function chamarIa<T>(buscar: typeof fetch, base: string, caminho: s
     clearTimeout(timer)
   }
 }
+
+export interface EstatisticaEvolucao {
+  /** Propostas que chegaram a ter uma consulta para decidir. */
+  comConsulta: number
+  /** Itens só de registro (o Analista não viu como resolver com segurança): não entram na taxa. */
+  semConsulta: number
+  pendentes: number
+  aprovadas: number
+  reprovadas: number
+  decididas: number
+  /** aprovadas / decididas, de 0 a 1 (null sem nenhuma decisão ainda). */
+  taxaAprovacao: number | null
+  /** Em quantas decisões o Master fez o que o Tester recomendou (aprovar/ler avisos -> aprovou; reprovar -> reprovou). */
+  concordouComTester: number
+  /** Decisões seguidas aprovadas, da mais recente para trás (a base de confiança que o projeto quer medir). */
+  aprovadasSeguidas: number
+}
+
+/** Quanto os Agents acertam, na opinião de quem decide. Só mede: nada aqui aprova ou ativa coisa alguma. */
+export function estatisticasEvolucao(relatorios: RelatorioEvolucao[]): EstatisticaEvolucao {
+  const comConsulta = relatorios.filter((r) => r.pacote)
+  const decididas = comConsulta.filter((r) => r.status !== 'pendente')
+  const aprovadas = decididas.filter((r) => r.status === 'aprovada')
+  const recentesPrimeiro = [...decididas].sort((a, b) => (b.decisao?.em ?? '').localeCompare(a.decisao?.em ?? ''))
+  let seguidas = 0
+  for (const r of recentesPrimeiro) {
+    if (r.status !== 'aprovada') break
+    seguidas += 1
+  }
+  const concordou = decididas.filter((r) => (r.veredito === 'reprovar_recomendado') === (r.status === 'reprovada')).length
+  return {
+    comConsulta: comConsulta.length,
+    semConsulta: relatorios.length - comConsulta.length,
+    pendentes: comConsulta.length - decididas.length,
+    aprovadas: aprovadas.length,
+    reprovadas: decididas.length - aprovadas.length,
+    decididas: decididas.length,
+    taxaAprovacao: decididas.length ? aprovadas.length / decididas.length : null,
+    concordouComTester: concordou,
+    aprovadasSeguidas: seguidas,
+  }
+}

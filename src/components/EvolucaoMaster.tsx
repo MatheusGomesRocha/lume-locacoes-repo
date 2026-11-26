@@ -3,6 +3,7 @@ import { Fragment, useState, type ReactNode } from 'react'
 import { mensagemDeErro } from './Formulario'
 import { Botao, CaixaErro, Carregando, Confirmar, Modal, Vazio, useAviso } from './ui'
 import { useApi } from '../lib/servicos'
+import { estatisticasEvolucao } from '../lib/evolucao'
 import { useCarregar } from '../lib/useCarregar'
 import type { RelatorioEvolucao, VereditoEvolucao } from '../types'
 
@@ -87,6 +88,17 @@ export function EvolucaoMaster() {
       </div>
       {analisando && <p role="status" className="mb-4 rounded-xl bg-gelo-50 p-3 text-sm text-tinta-soft">Isso pode levar 1 a 2 minutos: cada proposta passa por três Agents.</p>}
 
+      {!lista.carregando && !lista.erro && (lista.dados ?? []).length > 0 && (() => {
+        const e = estatisticasEvolucao(lista.dados ?? [])
+        return (
+          <section aria-label="Confiança nos Agents" className="mb-4 grid gap-3 rounded-xl bg-gelo-50 p-4 text-sm sm:grid-cols-4">
+            <p><strong className="block text-xl text-noite-900">{e.taxaAprovacao === null ? '—' : `${Math.round(e.taxaAprovacao * 100)}%`}</strong>aprovadas por você ({e.aprovadas} de {e.decididas} decididas)</p>
+            <p><strong className="block text-xl text-noite-900">{e.reprovadas}</strong>reprovadas · {e.pendentes} aguardando</p>
+            <p><strong className="block text-xl text-noite-900">{e.decididas ? `${e.concordouComTester} de ${e.decididas}` : '—'}</strong>vezes em que você decidiu como o Tester recomendou</p>
+            <p><strong className="block text-xl text-noite-900">{e.aprovadasSeguidas}</strong>aprovações seguidas (mais recentes)</p>
+          </section>
+        )
+      })()}
       {lista.carregando ? <Carregando /> : lista.erro ? <CaixaErro mensagem={lista.erro} aoTentar={() => void lista.recarregar()} /> : (
         <div className="cartao divide-y divide-gelo-200">
           {(lista.dados ?? []).length === 0 ? <Vazio titulo="Nenhuma proposta ainda" texto="Use “Analisar perguntas sem resposta” para os Agents proporem consultas novas." /> : (lista.dados ?? []).map((r) => (
