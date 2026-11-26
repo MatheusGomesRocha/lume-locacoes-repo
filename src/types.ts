@@ -87,6 +87,12 @@ export interface Resumo {
   proximos_eventos: { id: number; numero: string; evento: string; cliente: string; data_retirada: string; data_devolucao: string; total: number }[]
 }
 
+/** Pedido de ferramenta feito pelo assistente. Quem executa é o front, nunca a API de IA. */
+export interface Chamada {
+  nome: string
+  args: Record<string, unknown>
+}
+
 export interface RespostaChat {
   encontrou: boolean
   resposta: string
@@ -95,4 +101,8 @@ export interface RespostaChat {
   relacionadas: { id: string; pergunta: string }[]
   usou_contexto?: boolean
   gerada_por_llm?: boolean
+  /** Consultas que o front deve executar e devolver (a resposta final vem na segunda volta). */
+  consultas?: Chamada[]
+  /** Cadastros e exclusões que viram cartões no chat, cada um com a confirmação do usuário. */
+  acoes?: Chamada[]
 }

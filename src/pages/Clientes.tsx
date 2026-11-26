@@ -1,12 +1,11 @@
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
-import { errosDeCampos, mensagemDeErro } from '../components/Formulario'
-import { Botao, Cabecalho, Campo, CaixaErro, Carregando, Confirmar, Modal, Vazio, useAviso } from '../components/ui'
+import { useState } from 'react'
+import { mensagemDeErro } from '../components/Formulario'
+import { FormCliente } from '../components/formularios/FormCliente'
+import { Botao, Cabecalho, CaixaErro, Carregando, Confirmar, Modal, Vazio, useAviso } from '../components/ui'
 import { useApi } from '../lib/servicos'
 import { useCarregar } from '../lib/useCarregar'
-import type { Cliente, ClienteForm } from '../types'
-
-const vazio: ClienteForm = { nome: '', tipo: 'PF', documento: '', email: '', telefone: '', cidade: '', observacoes: '' }
+import type { Cliente } from '../types'
 
 export default function Clientes() {
   const api = useApi()
@@ -15,34 +14,15 @@ export default function Clientes() {
   const { dados, erro, carregando, recarregar } = useCarregar(() => api.clientes.listar(busca), [api, busca])
   const [editando, setEditando] = useState<Cliente | 'novo' | null>(null)
   const [excluindo, setExcluindo] = useState<Cliente | null>(null)
-  const [form, setForm] = useState<ClienteForm>(vazio)
-  const [erros, setErros] = useState<Record<string, string>>({})
-  const [salvando, setSalvando] = useState(false)
 
   function abrir(c: Cliente | 'novo') {
-    setErros({})
-    setForm(c === 'novo' ? vazio : { nome: c.nome, tipo: c.tipo, documento: c.documento ?? '', email: c.email ?? '', telefone: c.telefone ?? '', cidade: c.cidade ?? '', observacoes: c.observacoes ?? '' })
     setEditando(c)
   }
 
-  async function salvar(e: FormEvent) {
-    e.preventDefault()
-    setSalvando(true)
-    setErros({})
-    try {
-      const dados = { ...form, documento: form.documento || null, email: form.email || null, telefone: form.telefone || null, cidade: form.cidade || null, observacoes: form.observacoes || null }
-      if (editando === 'novo') await api.clientes.criar(dados)
-      else if (editando) await api.clientes.atualizar(editando.id, dados)
-      avisar(editando === 'novo' ? 'Cliente cadastrado.' : 'Cliente atualizado.')
-      setEditando(null)
-      await recarregar()
-    } catch (err) {
-      const campos = errosDeCampos(err)
-      setErros(campos)
-      if (!Object.keys(campos).length) avisar(mensagemDeErro(err), 'erro')
-    } finally {
-      setSalvando(false)
-    }
+  async function aoSalvo() {
+    avisar(editando === 'novo' ? 'Cliente cadastrado.' : 'Cliente atualizado.')
+    setEditando(null)
+    await recarregar()
   }
 
   async function excluir() {
@@ -56,8 +36,6 @@ export default function Clientes() {
     }
     setExcluindo(null)
   }
-
-  const set = (campo: keyof ClienteForm) => (e: { target: { value: string } }) => setForm((f) => ({ ...f, [campo]: e.target.value }))
 
   return (
     <>
@@ -96,19 +74,7 @@ export default function Clientes() {
       )}
 
       <Modal aberto={editando !== null} titulo={editando === 'novo' ? 'Novo cliente' : 'Editar cliente'} aoFechar={() => setEditando(null)} largo>
-        <form onSubmit={salvar} className="grid gap-4 sm:grid-cols-2" noValidate>
-          <Campo rotulo="Nome" erro={erros.nome} className="sm:col-span-2">{(id, aria) => <input id={id} {...aria} className={`entrada ${erros.nome ? 'entrada-erro' : ''}`} value={form.nome} onChange={set('nome')} autoFocus />}</Campo>
-          <Campo rotulo="Tipo" erro={erros.tipo}>{(id) => <select id={id} className="entrada" value={form.tipo} onChange={set('tipo')}><option value="PF">Pessoa física</option><option value="PJ">Empresa</option></select>}</Campo>
-          <Campo rotulo="CPF ou CNPJ" erro={erros.documento}>{(id) => <input id={id} className="entrada" value={form.documento ?? ''} onChange={set('documento')} />}</Campo>
-          <Campo rotulo="E-mail" erro={erros.email}>{(id, aria) => <input id={id} {...aria} type="email" className={`entrada ${erros.email ? 'entrada-erro' : ''}`} value={form.email ?? ''} onChange={set('email')} />}</Campo>
-          <Campo rotulo="Telefone" erro={erros.telefone}>{(id) => <input id={id} className="entrada" value={form.telefone ?? ''} onChange={set('telefone')} />}</Campo>
-          <Campo rotulo="Cidade" erro={erros.cidade} className="sm:col-span-2">{(id) => <input id={id} className="entrada" value={form.cidade ?? ''} onChange={set('cidade')} />}</Campo>
-          <Campo rotulo="Observações" className="sm:col-span-2">{(id) => <textarea id={id} rows={3} className="entrada" value={form.observacoes ?? ''} onChange={set('observacoes')} />}</Campo>
-          <div className="mt-2 flex justify-end gap-2 sm:col-span-2">
-            <Botao type="button" variante="secundario" onClick={() => setEditando(null)}>Cancelar</Botao>
-            <Botao type="submit" carregando={salvando}>Salvar cliente</Botao>
-          </div>
-        </form>
+        <FormCliente registro={editando === 'novo' ? null : editando} aoSalvo={() => void aoSalvo()} aoCancelar={() => setEditando(null)} />
       </Modal>
 
       <Confirmar aberto={!!excluindo} titulo="Excluir cliente?" texto={`${excluindo?.nome ?? ''} será removido. Clientes que já têm orçamentos não podem ser excluídos.`} rotuloConfirmar="Excluir cliente" perigo aoConfirmar={() => void excluir()} aoFechar={() => setExcluindo(null)} />

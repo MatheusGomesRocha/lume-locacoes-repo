@@ -2,6 +2,7 @@ import { ArrowUp, Sparkles } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { atrasoDeDigitacao, montarContexto } from '../lib/chat'
 import { useServicos } from '../lib/servicos'
+import { montarCartao, CartaoCadastro, CartaoExclusao, type Cartao, type Fim } from './CartoesChat'
 import type { RespostaChat } from '../types'
 import { Lumi } from './Lumi'
 
@@ -12,6 +13,8 @@ interface Mensagem {
   relacionadas?: RespostaChat['relacionadas']
   naoEncontrou?: boolean
   fonteId?: string | null
+  /** Formulário de cadastro ou confirmação de exclusão que o assistente abriu na conversa. */
+  cartao?: Cartao
 }
 
 const esperarPadrao = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
@@ -42,7 +45,7 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
   esperar?: (ms: number) => Promise<void>
   atraso?: (resposta: string) => number
 }) {
-  const { chat } = useServicos()
+  const { chat, api } = useServicos()
   const [mensagens, setMensagens] = useState<Mensagem[]>([{ id: 0, autor: 'lumi', texto: SAUDACAO }])
   const [sugestoes, setSugestoes] = useState<string[]>([])
   const [texto, setTexto] = useState('')
@@ -72,11 +75,22 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
 
     const inicio = Date.now()
     const resposta = await chat.perguntar(limpa, contexto)
-    const restante = Math.max(0, atraso(resposta.resposta) - (Date.now() - inicio))
+    let texto = resposta.resposta
+    let cartao: Cartao | undefined
+    if (resposta.acoes?.length) {
+      const montado = await montarCartao(api, resposta.acoes[0])
+      if ('cartao' in montado) cartao = montado.cartao
+      else texto = montado.texto
+    }
+    const restante = Math.max(0, atraso(texto) - (Date.now() - inicio))
     await esperar(restante)
 
     setDigitando(false)
-    setMensagens((m) => [...m, { id: proximoId.current++, autor: 'lumi', texto: resposta.resposta, relacionadas: resposta.relacionadas, naoEncontrou: !resposta.encontrou, fonteId: resposta.fonte?.id ?? null }])
+    setMensagens((m) => [...m, { id: proximoId.current++, autor: 'lumi', texto, relacionadas: resposta.relacionadas, naoEncontrou: !resposta.encontrou, fonteId: resposta.fonte?.id ?? null, cartao }])
+  }
+
+  function finalizarCartao(id: number, fim: Fim) {
+    setMensagens((m) => m.map((x) => (x.id === id && x.cartao ? { ...x, cartao: { ...x.cartao, fim } } : x)))
   }
 
   function aoEnviar(e: FormEvent) {
@@ -95,7 +109,8 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
               <p className="max-w-[85%] rounded-2xl rounded-br-md bg-noite-900 px-4 py-2.5 text-[15px] leading-relaxed text-white">{m.texto}</p>
             </div>
           ) : (
-            <div key={m.id} className="flex animate-entrar items-end gap-2">
+            <div key={m.id} className="animate-entrar space-y-2">
+            <div className="flex items-end gap-2">
               <Lumi tamanho={34} estado={m.naoEncontrou ? 'ocioso' : 'feliz'} />
               <div className="max-w-[85%]">
                 <p className="rounded-2xl rounded-bl-md bg-white px-4 py-2.5 text-[15px] leading-relaxed text-tinta shadow-card ring-1 ring-gelo-200">{m.texto}</p>
@@ -110,6 +125,9 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
                   </div>
                 )}
               </div>
+            </div>
+            {m.cartao?.tipo === 'cadastro' && <CartaoCadastro preparo={m.cartao.preparo} fim={m.cartao.fim} aoFinalizar={(f) => finalizarCartao(m.id, f)} />}
+            {m.cartao?.tipo === 'exclusao' && <CartaoExclusao alvos={m.cartao.alvos} fim={m.cartao.fim} aoFinalizar={(f) => finalizarCartao(m.id, f)} />}
             </div>
           ),
         )}

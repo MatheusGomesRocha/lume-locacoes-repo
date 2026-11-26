@@ -1,4 +1,5 @@
-import type { RespostaChat } from '../types'
+import type { Chamada, RespostaChat } from '../types'
+import { hojeISO } from './format'
 
 /**
  * Tempo de "digitando…" antes de mostrar a resposta, para parecer que o assistente está pesquisando.
@@ -48,7 +49,14 @@ type Config = { tipo: 'direto'; url: string } | { tipo: 'laravel'; url: string }
  *  - "direto": navegador -> API Python (usado no GitHub Pages)
  *  - "laravel": navegador -> Laravel -> API Python (versão real; o Laravel esconde a API e o token)
  */
-export function criarClienteChat(config: Config, buscar: typeof fetch = (...a) => fetch(...a), tempoLimiteMs = 30_000): ClienteChat {
+export function criarClienteChat(
+  config: Config,
+  buscar: typeof fetch = (...a) => fetch(...a),
+  tempoLimiteMs = 30_000,
+  /** Executa as consultas que o assistente pede (ler dados). Sem isto, pedidos de consulta viram "indisponível". */
+  executar?: (consulta: Chamada) => Promise<unknown>,
+  hoje: () => string = () => hojeISO(),
+): ClienteChat {
   const base = config.url.replace(/\/$/, '')
 
   async function chamar(caminho: string, init?: RequestInit): Promise<Response> {
@@ -76,20 +84,40 @@ export function criarClienteChat(config: Config, buscar: typeof fetch = (...a) =
     },
 
     async perguntar(pergunta, contexto) {
-      try {
-        const corpo: Record<string, unknown> = { pergunta }
-        if (contexto?.historico.length) corpo.historico = contexto.historico
-        if (contexto?.ultimoId) corpo.ultimo_id = contexto.ultimoId
-        const r = await chamar('/chat', { method: 'POST', body: JSON.stringify(corpo) })
-        if (r.status === 429) {
-          return { ...RESPOSTA_INDISPONIVEL, resposta: 'Muitas perguntas em pouco tempo. Aguarde um minuto e tente de novo.' }
+      const corpo: Record<string, unknown> = { pergunta, hoje: hoje() }
+      if (contexto?.historico.length) corpo.historico = contexto.historico
+      if (contexto?.ultimoId) corpo.ultimo_id = contexto.ultimoId
+
+      async function enviar(c: Record<string, unknown>): Promise<RespostaChat> {
+        try {
+          const r = await chamar('/chat', { method: 'POST', body: JSON.stringify(c) })
+          if (r.status === 429) {
+            return { ...RESPOSTA_INDISPONIVEL, resposta: 'Muitas perguntas em pouco tempo. Aguarde um minuto e tente de novo.' }
+          }
+          const dados = await r.json().catch(() => null)
+          if (dados && typeof dados.resposta === 'string') return dados as RespostaChat
+          return RESPOSTA_INDISPONIVEL
+        } catch {
+          return RESPOSTA_INDISPONIVEL
         }
-        const dados = await r.json().catch(() => null)
-        if (dados && typeof dados.resposta === 'string') return dados as RespostaChat
-        return RESPOSTA_INDISPONIVEL
-      } catch {
-        return RESPOSTA_INDISPONIVEL
       }
+
+      const primeira = await enviar(corpo)
+      if (!primeira.consultas?.length) return primeira
+
+      // O assistente pediu dados: o front lê pela mesma API das telas e manda o resultado na segunda volta.
+      if (!executar) return RESPOSTA_INDISPONIVEL
+      const resultados = []
+      for (const consulta of primeira.consultas.slice(0, 3)) {
+        try {
+          resultados.push({ nome: consulta.nome, args: consulta.args, resultado: await executar(consulta) })
+        } catch {
+          resultados.push({ nome: consulta.nome, args: consulta.args, resultado: { erro: 'não foi possível consultar agora' } })
+        }
+      }
+      const segunda = await enviar({ ...corpo, resultados })
+      // uma volta só: se ainda pedir consulta, desiste em vez de entrar em laço
+      return segunda.consultas?.length ? RESPOSTA_INDISPONIVEL : segunda
     },
   }
 }

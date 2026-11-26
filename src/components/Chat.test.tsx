@@ -1,6 +1,7 @@
 import { act, render, screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ServicosProvider } from '../lib/servicos'
+import { AvisoProvider } from './ui'
 import { chatFalso, servicosDeTeste } from '../test/utils'
 import { Chat } from './Chat'
 
@@ -111,5 +112,145 @@ describe('Chat com a Lumi', () => {
 
     expect(chat.contextos[0]).toEqual({ historico: [], ultimoId: null })
     expect(chat.contextos[1]).toEqual({ historico: ['mas e pra excluir produtos?'], ultimoId: 'prod-excluir' })
+  })
+})
+
+describe('cadastros e exclusões dentro do chat', () => {
+  const acao = (nome: string, args: Record<string, unknown>, resposta = 'Pronto.') => ({ resposta, acoes: [{ nome, args }] })
+
+  async function abrir(respostas: Parameters<typeof chatFalso>[0]) {
+    const servicos = servicosDeTeste({ chat: chatFalso(respostas) })
+    render(<ServicosProvider servicos={servicos}><AvisoProvider><Chat esperar={async () => {}} atraso={() => 1} /></AvisoProvider></ServicosProvider>)
+    await userEvent.type(screen.getByLabelText('Sua pergunta'), 'faça isso')
+    await userEvent.click(screen.getByRole('button', { name: 'Enviar pergunta' }))
+    return servicos
+  }
+
+  it('cadastro de cliente abre o mesmo formulário, já preenchido, e salva pela mesma API', async () => {
+    const { api } = await abrir(acao('cadastrar_cliente', { nome: 'Padaria Sol', tipo: 'PJ', cidade: 'Fortaleza' }))
+    const nome = await screen.findByLabelText('Nome')
+    expect(nome).toHaveValue('Padaria Sol')
+    expect(screen.getByLabelText('Tipo')).toHaveValue('PJ')
+    expect(screen.getByLabelText('Cidade')).toHaveValue('Fortaleza')
+    expect(await api.clientes.listar('Padaria')).toHaveLength(0) // nada foi gravado só por abrir
+
+    await userEvent.type(screen.getByLabelText('E-mail'), 'contato@padariasol.com')
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar cliente' }))
+
+    expect(await screen.findByText('Cliente “Padaria Sol” cadastrado.')).toBeInTheDocument()
+    expect(screen.queryByLabelText('Nome')).toBeNull()
+    expect(await api.clientes.listar('Padaria')).toMatchObject([{ nome: 'Padaria Sol', tipo: 'PJ', email: 'contato@padariasol.com' }])
+  })
+
+  it('o cadastro pelo chat segue as mesmas regras da tela (nome obrigatório, e-mail válido)', async () => {
+    const { api } = await abrir(acao('cadastrar_cliente', { cidade: 'Sobral' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Salvar cliente' }))
+    expect(await screen.findByText('O campo nome é obrigatório.')).toBeInTheDocument()
+
+    await userEvent.type(screen.getByLabelText('Nome'), 'Anastácia Zeta')
+    await userEvent.type(screen.getByLabelText('E-mail'), 'invalido')
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar cliente' }))
+    expect(await screen.findByText(/e-mail válido/)).toBeInTheDocument()
+    expect(await api.clientes.listar('Anastácia')).toHaveLength(0)
+  })
+
+  it('cancelar o formulário não grava nada', async () => {
+    const { api } = await abrir(acao('cadastrar_cliente', { nome: 'Ana Teste' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancelar' }))
+    expect(await screen.findByText(/cancelado\. Nada foi salvo/)).toBeInTheDocument()
+    expect(await api.clientes.listar('Ana Teste')).toHaveLength(0)
+  })
+
+  it('cadastro de produto vem com os valores e sugere as categorias existentes', async () => {
+    const { api } = await abrir(acao('cadastrar_produto', { codigo: 'TRI-001', nome: 'Tripé', categoria: 'Som', valor_diaria: 25, quantidade: 4 }))
+    expect(await screen.findByLabelText('Nome')).toHaveValue('Tripé')
+    expect(screen.getByLabelText('Valor da diária (R$)')).toHaveValue(25)
+    await userEvent.click(screen.getByRole('button', { name: 'Salvar produto' }))
+    expect(await screen.findByText('Produto “Tripé” cadastrado.')).toBeInTheDocument()
+    expect((await api.produtos.listar({ busca: 'TRI-001' }))[0]).toMatchObject({ nome: 'Tripé', quantidade: 4, valor_diaria: 25 })
+  })
+
+  it('cadastro de produto com código repetido mostra o erro da API no cartão', async () => {
+    await abrir(acao('cadastrar_produto', { codigo: 'LUZ-001', nome: 'Outro', categoria: 'Som', valor_diaria: 10 }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Salvar produto' }))
+    expect(await screen.findByText(/já está em uso|já existe|já foi/i)).toBeInTheDocument()
+  })
+
+  it('novo orçamento vem com cliente, evento e itens escolhidos e mostra o total', async () => {
+    const { api } = await abrir(acao('cadastrar_orcamento', { cliente: 'Hotel Pôr do Sol', evento: 'Réveillon', data_retirada: '2026-12-30', data_devolucao: '2026-12-31', itens: [{ produto: 'Cadeira Tiffany', quantidade: 10 }] }))
+    expect(await screen.findByLabelText('Evento')).toHaveValue('Réveillon')
+    expect(screen.getByLabelText('Cliente')).toHaveDisplayValue('Hotel Pôr do Sol')
+    expect(screen.getByLabelText('Quantidade de Cadeira Tiffany Branca')).toHaveValue(10)
+    await userEvent.click(screen.getByRole('button', { name: 'Criar orçamento' }))
+    expect(await screen.findByText(/Orçamento \d{4}\/\d{4} criado\./)).toBeInTheDocument()
+    expect((await api.orcamentos.listar({ busca: 'Réveillon' }))[0]).toMatchObject({ status: 'rascunho', evento: 'Réveillon' })
+  })
+
+  it('novo orçamento sem itens é recusado pela mesma regra da tela', async () => {
+    await abrir(acao('cadastrar_orcamento', { cliente: 'Hotel Pôr do Sol', evento: 'Sem itens' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Criar orçamento' }))
+    expect(await screen.findByText(/pelo menos 1 item/)).toBeInTheDocument()
+  })
+
+  it('cliente inexistente no pedido de orçamento aparece como aviso no cartão', async () => {
+    await abrir(acao('cadastrar_orcamento', { cliente: 'Zé Ninguém' }))
+    expect(await screen.findByText(/Não encontrei o cliente “Zé Ninguém”/)).toBeInTheDocument()
+  })
+
+  it('exclusão só acontece depois do botão de confirmação', async () => {
+    const servicos = servicosDeTeste({ chat: chatFalso(acao('excluir_registro', { modulo: 'produto', busca: 'Tripé' })) })
+    const novo = await servicos.api.produtos.criar({ codigo: 'TRI-9', nome: 'Tripé de Teste', categoria: 'Som', descricao: null, valor_diaria: 5, valor_reposicao: 0, quantidade: 1, ativo: true })
+    render(<ServicosProvider servicos={servicos}><AvisoProvider><Chat esperar={async () => {}} atraso={() => 1} /></AvisoProvider></ServicosProvider>)
+    await userEvent.type(screen.getByLabelText('Sua pergunta'), 'exclui o tripé')
+    await userEvent.click(screen.getByRole('button', { name: 'Enviar pergunta' }))
+
+    expect(await screen.findByText('Tripé de Teste (TRI-9)')).toBeInTheDocument()
+    expect(screen.getByText(/Se o produto já foi usado em orçamentos/)).toBeInTheDocument()
+    expect(await servicos.api.produtos.listar({ busca: 'TRI-9' })).toHaveLength(1) // ainda não excluiu
+
+    await userEvent.click(screen.getByRole('button', { name: 'Confirmar exclusão' }))
+    expect(await screen.findByText('Tripé de Teste (TRI-9) foi excluído.')).toBeInTheDocument()
+    expect(await servicos.api.produtos.listar({ busca: 'TRI-9' })).toHaveLength(0)
+    expect(novo.id).toBeGreaterThan(0)
+  })
+
+  it('cancelar a exclusão não exclui', async () => {
+    const servicos = await abrir(acao('excluir_registro', { modulo: 'cliente', busca: 'Mariana Albuquerque' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Cancelar' }))
+    expect(await screen.findByText(/Exclusão cancelada/)).toBeInTheDocument()
+    expect(await servicos.api.clientes.listar('Mariana')).toHaveLength(1)
+  })
+
+  it('as regras de hoje continuam valendo: cliente com orçamento mostra a mensagem da API e nada é excluído', async () => {
+    const servicos = await abrir(acao('excluir_registro', { modulo: 'cliente', busca: 'Hotel Pôr do Sol' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Confirmar exclusão' }))
+    expect(await screen.findByText(/já tem orçamentos e não pode ser excluído/)).toBeInTheDocument()
+    expect(await servicos.api.clientes.listar('Hotel Pôr do Sol')).toHaveLength(1)
+  })
+
+  it('orçamento aprovado não pode ser excluído, mesmo confirmando', async () => {
+    const servicos = servicosDeTeste()
+    const aprovado = (await servicos.api.orcamentos.listar({ status: 'aprovado' }))[0]
+    const completo = servicosDeTeste({ api: servicos.api, chat: chatFalso(acao('excluir_registro', { modulo: 'orcamento', busca: aprovado.numero })) })
+    render(<ServicosProvider servicos={completo}><AvisoProvider><Chat esperar={async () => {}} atraso={() => 1} /></AvisoProvider></ServicosProvider>)
+    await userEvent.type(screen.getByLabelText('Sua pergunta'), 'apague o orçamento')
+    await userEvent.click(screen.getByRole('button', { name: 'Enviar pergunta' }))
+    await userEvent.click(await screen.findByRole('button', { name: 'Confirmar exclusão' }))
+    expect(await screen.findByText(/Só orçamentos|não pode ser excluído|rascunho|cancelado/i)).toBeInTheDocument()
+    expect((await servicos.api.orcamentos.obter(aprovado.id)).id).toBe(aprovado.id)
+  })
+
+  it('quando há mais de um registro parecido, pergunta qual antes de pedir a confirmação', async () => {
+    const servicos = await abrir(acao('excluir_registro', { modulo: 'produto', busca: 'Tenda' }))
+    expect(await screen.findByText(/mais de um/)).toBeInTheDocument()
+    await userEvent.click(screen.getByRole('button', { name: /Tenda 10x10 m/ }))
+    expect(await screen.findByRole('button', { name: 'Confirmar exclusão' })).toBeInTheDocument()
+    expect(await servicos.api.produtos.listar({ busca: 'Tenda' })).toHaveLength(2)
+  })
+
+  it('registro que não existe vira uma frase, sem botão de excluir', async () => {
+    await abrir(acao('excluir_registro', { modulo: 'cliente', busca: 'Fulano Inexistente' }))
+    expect(await screen.findByText('Não encontrei nenhum cliente com “Fulano Inexistente”.')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: 'Confirmar exclusão' })).toBeNull()
   })
 })
