@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { criarApiLocal } from '../api/local'
-import { SENHA_DEMO } from '../api/acesso'
+import { MASTER_EMAIL, SENHA_DEMO } from '../api/acesso'
 import { renderizar, servicosDeTeste, chatFalso, memoria, HOJE } from '../test/utils'
 
 describe('Painel', () => {
@@ -207,6 +207,46 @@ describe('Assistente e navegação', () => {
     await userEvent.click(screen.getByRole('button', { name: /Apagar registros/ }))
     await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Apagar' }))
     expect(await screen.findByText('Nenhum registro')).toBeInTheDocument()
+  })
+
+  it('o master responde uma pergunta sem resposta e ela entra na base; ignorar tira da lista', async () => {
+    const servicos = servicosDeTeste()
+    const registrar = (pergunta: string) => servicos.api.chatLogs.registrar({ pergunta, resposta: 'Não encontrei', tipo: 'nao_encontrou', fonte_id: null, ferramenta: null, gerada_por_llm: false, em_cache: false, usou_contexto: false, latencia_ms: 5, voltas: 1 })
+    await registrar('como adiciono uma pessoa no sistema')
+    await registrar('receita de bolo')
+    renderizar('/assistente/conversas', servicos)
+
+    expect(await screen.findByText('2 aguardando resposta')).toBeInTheDocument()
+    const linha = screen.getByText('como adiciono uma pessoa no sistema').closest('tr') as HTMLElement
+    await userEvent.click(within(linha).getByRole('button', { name: /Responder/ }))
+    const dialogo = await screen.findByRole('dialog', { name: 'Responder pergunta' })
+    expect(within(dialogo).getByLabelText('Pergunta')).toHaveValue('Como adiciono uma pessoa no sistema?')
+    await userEvent.type(within(dialogo).getByLabelText('Resposta'), 'Peça ao master para cadastrar você em Usuários.')
+    await userEvent.click(within(dialogo).getByRole('button', { name: 'Salvar resposta' }))
+
+    expect(await screen.findByText('Respostas que você escreveu')).toBeInTheDocument()
+    expect(await screen.findByText('Já respondida')).toBeInTheDocument()
+    expect(await screen.findByText('1 aguardando resposta')).toBeInTheDocument()
+    expect((await servicos.api.faq.paraAssistente())[0]).toMatchObject({ resposta: 'Peça ao master para cadastrar você em Usuários.', palavras_chave: ['como adiciono uma pessoa no sistema'] })
+
+    await userEvent.click(screen.getByRole('button', { name: /Ignorar/ }))
+    expect(await screen.findByText('0 aguardando resposta')).toBeInTheDocument()
+    expect(screen.getByText('Ignorada')).toBeInTheDocument()
+  })
+
+  it('quem não é master vê as conversas, mas sem Responder, Ignorar nem a lista de respostas', async () => {
+    const api = criarApiLocal({ storage: memoria(), agora: () => HOJE, sessaoInicial: MASTER_EMAIL })
+    await api.chatLogs.registrar({ pergunta: 'como faço backup', resposta: 'Não encontrei', tipo: 'nao_encontrou', fonte_id: null, ferramenta: null, gerada_por_llm: false, em_cache: false, usou_contexto: false, latencia_ms: 5, voltas: 1 })
+    const grupo = await api.grupos.criar({ nome: 'Só conversas', descricao: null, permissoes: ['assistente.conversas'] })
+    await api.usuarios.criar({ nome: 'Ana', email: 'ana@lume.com', papel: 'usuario', grupo_id: grupo.id, ativo: true, senha: 'senha1234' })
+    await api.auth.sair()
+    await api.auth.entrar('ana@lume.com', 'senha1234')
+    renderizar('/assistente/conversas', servicosDeTeste({ api }))
+
+    expect(await screen.findByText('como faço backup')).toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /Responder/ })).toBeNull()
+    expect(screen.queryByRole('button', { name: /Ignorar/ })).toBeNull()
+    expect(screen.queryByText('Respostas que você escreveu')).toBeNull()
   })
 
   it('o botão flutuante abre e fecha a conversa nas outras telas', async () => {

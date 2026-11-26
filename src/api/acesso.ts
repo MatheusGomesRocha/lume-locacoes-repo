@@ -3,7 +3,7 @@
  * Reproduz as regras do Laravel. NÃO é segurança de verdade: tudo roda no navegador e quem abre o DevTools pode mexer.
  * Serve para mostrar o fluxo; a proteção real está na versão com backend.
  */
-import { MENSAGEM_SEM_PERMISSAO, MENSAGEM_SEM_SESSAO, TODAS_PERMISSOES, ehAdmin, limparPermissoes, podeGerenciar } from '../lib/permissoes'
+import { MENSAGEM_SEM_PERMISSAO, MENSAGEM_SEM_SESSAO, PERMISSAO_SO_MASTER, TODAS_PERMISSOES, ehAdmin, limparPermissoes, podeGerenciar } from '../lib/permissoes'
 import type { Grupo, GrupoForm, MinhaContaForm, Papel, Sessao, Usuario, UsuarioForm } from '../types'
 import { ApiError, type Api } from './tipos'
 
@@ -37,7 +37,7 @@ export async function hashSenha(senha: string, sal: string): Promise<string> {
 const novoSal = () => Math.random().toString(36).slice(2, 10)
 
 const permissoesDe = (u: { papel: Papel; grupo_id: number }, grupos: Acesso['grupos']): string[] =>
-  u.papel === 'master' ? [...TODAS_PERMISSOES] : limparPermissoes(grupos.find((g) => g.id === u.grupo_id)?.permissoes ?? [])
+  u.papel === 'master' ? [...TODAS_PERMISSOES, PERMISSAO_SO_MASTER] : limparPermissoes(grupos.find((g) => g.id === u.grupo_id)?.permissoes ?? [])
 
 export async function acessoDoSeed(): Promise<Acesso> {
   const grupos: Acesso['grupos'] = [

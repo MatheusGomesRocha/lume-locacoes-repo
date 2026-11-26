@@ -1,4 +1,4 @@
-import type { ChatLog, ChatLogForm, RespostaChat, TipoLog } from '../types'
+import type { ChatLog, ChatLogForm, FaqItem, RespostaChat, TipoLog } from '../types'
 
 /** Que tipo de interação foi esta, olhando só a resposta que a API devolveu. */
 export function tipoDaResposta(r: RespostaChat, resposta: string): TipoLog {
@@ -60,3 +60,24 @@ export function resumirLogs(logs: ChatLog[]): ResumoLogs {
 }
 
 export const ROTULO_TIPO: Record<TipoLog, string> = { ajuda: 'Ajuda', consulta: 'Consulta', cadastro: 'Cadastro', exclusao: 'Exclusão', nao_encontrou: 'Não encontrou', erro: 'Erro' }
+
+/** Minúsculas, sem acento nem pontuação: "Como adiciono uma pessoa?" e "como adiciono uma pessoa" são a mesma pergunta. */
+export const normalizarPergunta = (t: string) => t.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^a-z0-9]+/g, ' ').trim()
+
+/** Uma pergunta sem resposta que o master ainda pode tratar: não foi ignorada nem respondida. */
+export function pendentesDeResposta(logs: ChatLog[], faq: FaqItem[]): ChatLog[] {
+  const respondidas = new Set(faq.flatMap((i) => [i.pergunta, ...i.palavras_chave]).map(normalizarPergunta))
+  return logs.filter((l) => l.tipo === 'nao_encontrou' && l.desfecho !== 'ignorado' && !respondidas.has(normalizarPergunta(l.pergunta)))
+}
+
+/** O mesmo texto de pergunta, quantas vezes apareceu (para o master ver o que mais falta). */
+export function quantasVezesPerguntaram(logs: ChatLog[], pergunta: string): number {
+  const alvo = normalizarPergunta(pergunta)
+  return logs.filter((l) => l.tipo === 'nao_encontrou' && normalizarPergunta(l.pergunta) === alvo).length
+}
+
+/** Primeira letra maiúscula e "?" no fim: sugestão para o campo "pergunta" do FAQ. */
+export function sugerirPergunta(texto: string): string {
+  const t = texto.trim().replace(/[?!.\s]+$/, '')
+  return t ? `${t[0].toUpperCase()}${t.slice(1)}?` : ''
+}

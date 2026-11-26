@@ -75,6 +75,8 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
     if (limpa.length < 2 || digitando) return
     // O contexto é o que veio ANTES desta pergunta, então é montado antes de ela entrar na lista.
     const contexto = montarContexto(mensagens)
+    const faqExtra = await api.faq.paraAssistente().catch(() => [])
+    if (faqExtra.length) contexto.faqExtra = faqExtra
     setTexto('')
     setSugestoes([])
     setMensagens((m) => [...m, { id: proximoId.current++, autor: 'usuario', texto: limpa }])

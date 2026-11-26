@@ -152,4 +152,17 @@ describe('consultas pedidas pelo assistente (duas voltas)', () => {
     expect(r.acoes).toEqual(acao.acoes)
     expect(corpos).toHaveLength(1)
   })
+
+  it('manda o FAQ extra só no modo direto (no Laravel ele mesmo anexa)', async () => {
+    const corpos: Record<string, unknown>[] = []
+    const f = (async (_u: string, i: RequestInit) => {
+      corpos.push(JSON.parse(String(i.body)))
+      return { status: 200, ok: true, json: async () => ({ encontrou: true, resposta: 'Oi', fonte: null, confianca: 1, relacionadas: [] }) }
+    }) as unknown as typeof fetch
+    const extra = [{ id: 1, modulo: 'Acesso', pergunta: 'Como adicionar uma pessoa?', resposta: 'Peça ao master.', palavras_chave: ['adicionar pessoa'], criado_em: 'x' }]
+    await criarClienteChat({ tipo: 'direto', url: 'http://ia' }, f).perguntar('como adiciono uma pessoa', { historico: [], faqExtra: extra })
+    await criarClienteChat({ tipo: 'laravel', url: 'http://api' }, f).perguntar('como adiciono uma pessoa', { historico: [], faqExtra: extra })
+    expect(corpos[0].faq_extra).toEqual([{ id: 1, modulo: 'Acesso', pergunta: 'Como adicionar uma pessoa?', resposta: 'Peça ao master.', palavras_chave: ['adicionar pessoa'] }]) // sem criado_em
+    expect(corpos[1]).not.toHaveProperty('faq_extra')
+  })
 })

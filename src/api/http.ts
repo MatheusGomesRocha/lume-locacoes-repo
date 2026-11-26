@@ -85,6 +85,13 @@ export function criarApiHttp(baseUrl: string, buscar: typeof fetch = (...a) => f
       excluir: (id) => chamar('DELETE', `/grupos/${id}`),
     },
     dashboard: () => chamar('GET', '/dashboard'),
+    faq: {
+      listar: () => chamar('GET', '/faq-itens'),
+      criar: (d) => chamar('POST', '/faq-itens', d),
+      atualizar: (id, d) => chamar('PUT', `/faq-itens/${id}`, d),
+      excluir: (id) => chamar('DELETE', `/faq-itens/${id}`),
+      paraAssistente: async () => [],
+    },
     chatLogs: {
       listar: (f = {}) => chamar('GET', '/chat-logs' + qs({ tipo: f.tipo, feedback: f.feedback })),
       registrar: (d) => chamar('POST', '/chat-logs', d),

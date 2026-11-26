@@ -1,5 +1,5 @@
-import { montarRegistro, resumirLogs, tipoDaResposta } from './logs'
-import type { ChatLog, RespostaChat } from '../types'
+import { montarRegistro, normalizarPergunta, pendentesDeResposta, quantasVezesPerguntaram, resumirLogs, sugerirPergunta, tipoDaResposta } from './logs'
+import type { ChatLog, FaqItem, RespostaChat } from '../types'
 
 const base: RespostaChat = { encontrou: true, resposta: 'x', fonte: { id: 'faq-1', pergunta: 'P' } as RespostaChat['fonte'], confianca: 0.9, relacionadas: [] }
 
@@ -33,5 +33,40 @@ describe('resumirLogs', () => {
   })
   it('lista vazia não quebra', () => {
     expect(resumirLogs([])).toMatchObject({ total: 0, latenciaMediaMs: null, latenciaP95Ms: null })
+  })
+})
+
+describe('perguntas sem resposta (tela do master)', () => {
+  const log = (id: number, pergunta: string, extra: Partial<ChatLog> = {}): ChatLog => ({
+    id, criado_em: '2026-11-25T10:00:00Z', pergunta, resposta: 'Não encontrei', tipo: 'nao_encontrou', fonte_id: null, ferramenta: null,
+    gerada_por_llm: false, em_cache: false, usou_contexto: false, latencia_ms: 10, voltas: 1, feedback: null, desfecho: null, ...extra,
+  })
+  const faq: FaqItem[] = [{ id: 1, modulo: 'Acesso', pergunta: 'Como adicionar uma pessoa?', resposta: 'x', palavras_chave: ['adiciono pessoa no sistema'], criado_em: '' }]
+
+  it('normaliza acento, caixa e pontuação', () => {
+    expect(normalizarPergunta('  Como ADICIONO uma pessoa?! ')).toBe('como adiciono uma pessoa')
+    expect(normalizarPergunta('Orçamento é aprovação')).toBe('orcamento e aprovacao')
+  })
+
+  it('só pendem as sem resposta que não foram ignoradas nem respondidas', () => {
+    const logs = [
+      log(1, 'como faço backup?'),
+      log(2, 'Adiciono pessoa no sistema!'),            // já respondida (palavra-chave)
+      log(3, 'receita de bolo', { desfecho: 'ignorado' }),
+      log(4, 'como criar um orçamento', { tipo: 'ajuda' }), // achou resposta: não é pendência
+      log(5, 'como faço backup'),                        // repetida da 1
+    ]
+    expect(pendentesDeResposta(logs, faq).map((l) => l.id)).toEqual([1, 5])
+  })
+
+  it('conta quantas vezes a mesma pergunta apareceu', () => {
+    const logs = [log(1, 'Como faço backup?'), log(2, 'como faco backup'), log(3, 'outra')]
+    expect(quantasVezesPerguntaram(logs, 'como faço backup')).toBe(2)
+  })
+
+  it('sugere a pergunta com maiúscula e interrogação', () => {
+    expect(sugerirPergunta('como adiciono uma pessoa no sistema')).toBe('Como adiciono uma pessoa no sistema?')
+    expect(sugerirPergunta('  já tem "?"?? ')).toBe('Já tem "?"?')
+    expect(sugerirPergunta('   ')).toBe('')
   })
 })

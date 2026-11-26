@@ -24,6 +24,9 @@ export const MODULOS: ModuloDePermissao[] = [
   { id: 'usuarios', nome: 'Usuários', acoes: crud, soAdmin: true },
 ]
 
+/** Só o master tem (responder perguntas sem resposta). Fica fora do catálogo: nenhum grupo a recebe. */
+export const PERMISSAO_SO_MASTER = 'faq.responder'
+
 export const chave = (modulo: string, acao: string) => `${modulo}.${acao}`
 export const TODAS_PERMISSOES: string[] = MODULOS.flatMap((m) => m.acoes.map((a) => chave(m.id, a.id)))
 export const permissaoExiste = (p: string) => TODAS_PERMISSOES.includes(p)

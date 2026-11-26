@@ -23,6 +23,8 @@ export const RESPOSTA_INDISPONIVEL: RespostaChat = {
 export interface ContextoChat {
   historico: string[]
   ultimoId?: string | null
+  /** Respostas que o master escreveu (só na demonstração: na versão real o Laravel anexa). */
+  faqExtra?: { id: number; modulo: string; pergunta: string; resposta: string; palavras_chave: string[] }[]
 }
 
 export interface ClienteChat {
@@ -87,6 +89,9 @@ export function criarClienteChat(
       const corpo: Record<string, unknown> = { pergunta, hoje: hoje() }
       if (contexto?.historico.length) corpo.historico = contexto.historico
       if (contexto?.ultimoId) corpo.ultimo_id = contexto.ultimoId
+      if (config.tipo === 'direto' && contexto?.faqExtra?.length) {
+        corpo.faq_extra = contexto.faqExtra.map(({ id, modulo, pergunta, resposta, palavras_chave }) => ({ id, modulo, pergunta, resposta, palavras_chave }))
+      }
 
       async function enviar(c: Record<string, unknown>): Promise<RespostaChat> {
         try {

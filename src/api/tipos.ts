@@ -1,5 +1,5 @@
 import type {
-  ChatLog, ChatLogAjuste, ChatLogForm, TipoLog,
+  ChatLog, ChatLogAjuste, ChatLogForm, FaqForm, FaqItem, TipoLog,
   Grupo, GrupoForm, MinhaContaForm, Sessao, Usuario, UsuarioForm,
   Cliente, ClienteForm, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, ProdutoForm, Resumo, StatusOrcamento,
 } from '../types'
@@ -55,6 +55,15 @@ export interface Api {
   pagamentos: {
     listar(filtro?: FiltroPagamento): Promise<Pagamento[]>
     baixar(id: number, pagoEm: string, forma: FormaPagamento): Promise<Pagamento>
+  }
+  /** Respostas do master para perguntas sem resposta (só o master mexe). */
+  faq: {
+    listar(): Promise<FaqItem[]>
+    criar(dados: FaqForm): Promise<FaqItem>
+    atualizar(id: number, dados: FaqForm): Promise<FaqItem>
+    excluir(id: number): Promise<void>
+    /** O que o chat manda à API junto da pergunta. Na versão real o Laravel já anexa por conta própria, então volta vazio. */
+    paraAssistente(): Promise<FaqItem[]>
   }
   /** Login e sessão. */
   auth: {

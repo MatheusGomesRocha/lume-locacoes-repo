@@ -114,7 +114,19 @@ export interface RespostaChat {
 }
 
 /** O que aconteceu com um pedido de cadastro ou exclusão aberto no chat. */
-export type Desfecho = 'concluido' | 'cancelado' | 'recusado'
+export type Desfecho = 'concluido' | 'cancelado' | 'recusado' | 'ignorado'
+/** Resposta que o master escreveu para uma pergunta sem resposta. Entra direto na base de ajuda da Lumi. */
+export interface FaqItem {
+  id: number
+  modulo: string
+  pergunta: string
+  resposta: string
+  palavras_chave: string[]
+  criado_em: string
+}
+export type FaqForm = Omit<FaqItem, 'id' | 'criado_em'>
+export const MODULOS_FAQ = ['Orçamentos', 'Financeiro', 'Produtos', 'Clientes', 'Painel', 'Acesso', 'Assistente', 'Versão de demonstração']
+
 export type TipoLog = 'ajuda' | 'consulta' | 'cadastro' | 'exclusao' | 'nao_encontrou' | 'erro'
 export const TIPOS_LOG: TipoLog[] = ['ajuda', 'consulta', 'cadastro', 'exclusao', 'nao_encontrou', 'erro']
 

@@ -5,8 +5,8 @@
 import seedPadrao from '../data/seed.json'
 import { hojeISO } from '../lib/format'
 import { calcularFaltas, calcularTotal, diarias, podeAprovar, podeCancelar, podeEditar, podeEnviar, podeExcluir, podeFinalizar, proximoNumero } from '../lib/regras'
-import { STATUS_ORCAMENTO } from '../types'
-import type { ChatLog, Cliente, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, Resumo, StatusOrcamento } from '../types'
+import { MODULOS_FAQ, STATUS_ORCAMENTO } from '../types'
+import type { ChatLog, Cliente, FaqForm, FaqItem, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, Resumo, StatusOrcamento } from '../types'
 import { criarAcessoLocal } from './acesso'
 import { protegerApi } from './protegida'
 import { ApiError, type Api, type FiltroPagamento } from './tipos'
@@ -14,6 +14,27 @@ import { ApiError, type Api, type FiltroPagamento } from './tipos'
 export const CHAVE_STORAGE = 'lume:v1'
 /** Quantos registros do assistente a demonstração guarda (os mais antigos saem). */
 export const MAX_LOGS = 500
+export const MAX_FAQ = 100
+
+function validarFaq(d: FaqForm): Record<string, string[]> {
+  const erros: Record<string, string[]> = {}
+  if (!MODULOS_FAQ.includes(d.modulo)) erros.modulo = ['Escolha um módulo da lista.']
+  const pergunta = (d.pergunta ?? '').trim()
+  if (pergunta.length < 3) erros.pergunta = ['Escreva a pergunta (mínimo de 3 letras).']
+  else if (pergunta.length > 200) erros.pergunta = ['A pergunta pode ter no máximo 200 caracteres.']
+  const resposta = (d.resposta ?? '').trim()
+  if (resposta.length < 3) erros.resposta = ['Escreva a resposta (mínimo de 3 letras).']
+  else if (resposta.length > 1500) erros.resposta = ['A resposta pode ter no máximo 1500 caracteres.']
+  return erros
+}
+
+/** Tira espaços e repetidas das palavras-chave, como o Laravel faz. */
+const limparFaq = (d: FaqForm): FaqForm => ({
+  modulo: d.modulo,
+  pergunta: d.pergunta.trim(),
+  resposta: d.resposta.trim(),
+  palavras_chave: [...new Set((d.palavras_chave ?? []).map((p) => p.trim()).filter(Boolean))].slice(0, 20),
+})
 
 interface ItemSalvo { produto_id: number; quantidade: number; valor_diaria: number }
 interface OrcamentoSalvo extends Omit<Orcamento, 'cliente' | 'itens' | 'pagamentos' | 'diarias'> { itens: ItemSalvo[] }
@@ -24,6 +45,7 @@ interface Banco {
   pagamentos: Pagamento[]
   /** Ausente em dados salvos por versões antigas. */
   chat_logs?: ChatLog[]
+  faq_itens?: FaqItem[]
 }
 
 export interface Seed {
@@ -225,6 +247,39 @@ function criarApiDeDados({ storage, agora, seed }: { storage: NonNullable<Opcoes
       }
     },
 
+    faq: {
+      async listar() {
+        return [...(ler().faq_itens ?? [])].sort((x, y) => y.id - x.id)
+      },
+      async criar(d) {
+        const b = ler()
+        const lista = b.faq_itens ?? []
+        const erros = validarFaq(d)
+        if (Object.keys(erros).length) throw new ApiError('Confira os campos.', 422, [], erros)
+        const novo: FaqItem = { ...limparFaq(d), id: proximoId(lista), criado_em: agora().toISOString() }
+        b.faq_itens = [...lista, novo].slice(-MAX_FAQ)
+        gravar(b)
+        return clonar(novo)
+      },
+      async atualizar(id, d) {
+        const b = ler()
+        const item = achar(b.faq_itens ?? [], id)
+        const erros = validarFaq(d)
+        if (Object.keys(erros).length) throw new ApiError('Confira os campos.', 422, [], erros)
+        Object.assign(item, limparFaq(d))
+        gravar(b)
+        return clonar(item)
+      },
+      async excluir(id) {
+        const b = ler()
+        achar(b.faq_itens ?? [], id)
+        b.faq_itens = (b.faq_itens ?? []).filter((i) => i.id !== id)
+        gravar(b)
+      },
+      async paraAssistente() {
+        return clonar(ler().faq_itens ?? [])
+      },
+    },
     chatLogs: {
       async listar({ tipo, feedback } = {}) {
         return (ler().chat_logs ?? []).filter((l) => (!tipo || l.tipo === tipo) && (!feedback || l.feedback === feedback)).sort((x, y) => y.id - x.id)

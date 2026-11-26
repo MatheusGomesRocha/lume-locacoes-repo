@@ -1,4 +1,4 @@
-import { MENSAGEM_SEM_PERMISSAO, MENSAGEM_SEM_SESSAO } from '../lib/permissoes'
+import { MENSAGEM_SEM_PERMISSAO, MENSAGEM_SEM_SESSAO, PERMISSAO_SO_MASTER } from '../lib/permissoes'
 import { ApiError, type Api } from './tipos'
 
 /**
@@ -28,6 +28,11 @@ export const PERMISSOES_DA_API: Record<string, string[]> = {
   'orcamentos.cancelar': ['orcamentos.cancelar'],
   'pagamentos.listar': ['financeiro.ver'],
   'pagamentos.baixar': ['financeiro.baixar'],
+  'faq.listar': [PERMISSAO_SO_MASTER],
+  'faq.criar': [PERMISSAO_SO_MASTER],
+  'faq.atualizar': [PERMISSAO_SO_MASTER],
+  'faq.excluir': [PERMISSAO_SO_MASTER],
+  'faq.paraAssistente': ['assistente.usar'],
   'chatLogs.registrar': ['assistente.usar'],
   'chatLogs.atualizar': ['assistente.usar'],
   'chatLogs.listar': ['assistente.conversas'],
@@ -59,5 +64,6 @@ export function protegerApi(api: Api, permissoes: () => Promise<string[] | null>
     orcamentos: envolver(api.orcamentos, 'orcamentos'),
     pagamentos: envolver(api.pagamentos, 'pagamentos'),
     chatLogs: envolver(api.chatLogs, 'chatLogs'),
+    faq: envolver(api.faq, 'faq'),
   }
 }

@@ -2,7 +2,7 @@ import { criarApiLocal } from './local'
 import { MASTER_EMAIL, SENHA_DEMO } from './acesso'
 import { ApiError } from './tipos'
 import { memoria, HOJE } from '../test/utils'
-import { TODAS_PERMISSOES } from '../lib/permissoes'
+import { PERMISSAO_SO_MASTER, TODAS_PERMISSOES } from '../lib/permissoes'
 
 const nova = () => criarApiLocal({ storage: memoria(), agora: () => HOJE })
 const comoMaster = async () => { const a = nova(); await a.auth.entrar(MASTER_EMAIL, SENHA_DEMO); return a }
@@ -58,7 +58,7 @@ describe('login', () => {
 describe('permissões por grupo', () => {
   it('master tem todas', async () => {
     const a = await comoMaster()
-    expect((await a.auth.atualizar()).permissoes).toEqual(TODAS_PERMISSOES)
+    expect((await a.auth.atualizar()).permissoes).toEqual([...TODAS_PERMISSOES, PERMISSAO_SO_MASTER])
   })
   it('atendimento vê e cria clientes, mas não exclui, e não vê o financeiro', async () => {
     const a = nova()
@@ -190,5 +190,51 @@ describe('minha conta', () => {
     await falhaCom(a.auth.alterarMinhaConta({ nome: 'B', email: 'admin@lume.com' }), 422)
     const s = await a.auth.alterarMinhaConta({ nome: 'B', email: 'atendimento@lume.com', ...({ papel: 'master', grupo_id: 1 } as object) })
     expect(s.usuario).toMatchObject({ papel: 'usuario', grupo_id: 3 })
+  })
+})
+
+
+describe('respostas do master para perguntas sem resposta (FAQ extra)', () => {
+  const dados = { modulo: 'Acesso', pergunta: 'Como adicionar uma pessoa?', resposta: 'Peça ao master para cadastrar você em Usuários.', palavras_chave: [' adicionar pessoa ', 'adicionar pessoa', ''] }
+
+  it('o master cria, edita, lista e exclui; palavras-chave saem limpas', async () => {
+    const a = await comoMaster()
+    const criado = await a.faq.criar(dados)
+    expect(criado.palavras_chave).toEqual(['adicionar pessoa'])
+    await a.faq.atualizar(criado.id, { ...dados, resposta: 'Nova resposta para a pergunta.' })
+    expect((await a.faq.listar())[0].resposta).toBe('Nova resposta para a pergunta.')
+    expect(await a.faq.paraAssistente()).toHaveLength(1)
+    await a.faq.excluir(criado.id)
+    expect(await a.faq.listar()).toEqual([])
+  })
+
+  it('valida módulo, pergunta e resposta', async () => {
+    const a = await comoMaster()
+    const e = await falhaCom(a.faq.criar({ ...dados, modulo: 'Outro', pergunta: 'ab', resposta: '' }), 422)
+    expect(Object.keys(e.campos).sort()).toEqual(['modulo', 'pergunta', 'resposta'])
+  })
+
+  it('administrador (mesmo com todas as permissões) e usuário comum não mexem no FAQ', async () => {
+    const a = nova()
+    await entrarComo(a, 'admin@lume.com')
+    await falhaCom(a.faq.listar(), 403)
+    await falhaCom(a.faq.criar(dados), 403)
+    await entrarComo(a, 'atendimento@lume.com')
+    await falhaCom(a.faq.listar(), 403)
+  })
+
+  it('quem usa o chat recebe as respostas para mandar à API; sem permissão do chat, não', async () => {
+    const m = nova()
+    await m.auth.entrar(MASTER_EMAIL, SENHA_DEMO)
+    await m.faq.criar(dados)
+    await m.auth.sair()
+    await entrarComo(m, 'atendimento@lume.com')
+    expect(await m.faq.paraAssistente()).toHaveLength(1)
+  })
+
+  it('um grupo não consegue guardar a permissão exclusiva do master', async () => {
+    const a = await comoMaster()
+    const g = await a.grupos.criar({ nome: 'Tentativa', descricao: '', permissoes: [PERMISSAO_SO_MASTER, 'clientes.ver'] })
+    expect(g.permissoes).toEqual(['clientes.ver'])
   })
 })
