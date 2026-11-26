@@ -2,6 +2,7 @@ import type { ChatLog, ChatLogForm, FaqItem, RespostaChat, TipoLog } from '../ty
 
 /** Que tipo de interação foi esta, olhando só a resposta que a API devolveu. */
 export function tipoDaResposta(r: RespostaChat, resposta: string): TipoLog {
+  if (r.agente || r.executar?.length || (r.ferramentas && r.ferramentas.some((n) => n.startsWith('localizar_') || n === 'verificar_disponibilidade'))) return 'cadastro'
   if (r.voltas === 2 || r.ferramentas?.length || r.consultas?.length) return 'consulta'
   if (r.acoes?.[0]?.nome === 'excluir_registro') return 'exclusao'
   if (r.acoes?.length) return 'cadastro'
@@ -12,7 +13,11 @@ export function tipoDaResposta(r: RespostaChat, resposta: string): TipoLog {
 const CORTE_RESPOSTA = 600
 
 /** Nome da ferramenta envolvida, se houve. */
-export const ferramentaDaResposta = (r: RespostaChat): string | null => r.ferramentas?.[0] ?? r.acoes?.[0]?.nome ?? null
+export const ferramentaDaResposta = (r: RespostaChat): string | null => {
+  if (r.executar?.length) return r.executar[r.executar.length - 1].nome
+  if (r.agente || r.ferramentas?.some((n) => n.startsWith('localizar_'))) return r.agente?.fluxo === 'cliente' ? 'agente_cliente' : 'agente_orcamento'
+  return r.ferramentas?.[0] ?? r.acoes?.[0]?.nome ?? null
+}
 
 /** Monta o registro de uma pergunta. Guarda a ferramenta usada, mas nunca os dados que ela leu. */
 export function montarRegistro(pergunta: string, r: RespostaChat, texto: string, latenciaMs: number, ferramenta: string | null, tipo: TipoLog): ChatLogForm {

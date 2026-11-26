@@ -23,6 +23,8 @@ export const RESPOSTA_INDISPONIVEL: RespostaChat = {
 export interface ContextoChat {
   historico: string[]
   ultimoId?: string | null
+  /** Estado da conversa do agente (criar orçamento/cliente falando). Volta como veio na resposta anterior. */
+  agente?: Record<string, unknown> | null
   /** Respostas que o master escreveu (só na demonstração: na versão real o Laravel anexa). */
   faqExtra?: { id: number; modulo: string; pergunta: string; resposta: string; palavras_chave: string[] }[]
 }
@@ -33,6 +35,7 @@ export interface ClienteChat {
 }
 
 const MAX_PERGUNTAS_NO_CONTEXTO = 3
+const MAX_VOLTAS_DO_AGENTE = 5
 
 /**
  * Monta o contexto a partir das mensagens já trocadas (antes da pergunta nova):
@@ -89,6 +92,7 @@ export function criarClienteChat(
       const corpo: Record<string, unknown> = { pergunta, hoje: hoje() }
       if (contexto?.historico.length) corpo.historico = contexto.historico
       if (contexto?.ultimoId) corpo.ultimo_id = contexto.ultimoId
+      if (contexto?.agente) corpo.agente = contexto.agente
       if (config.tipo === 'direto' && contexto?.faqExtra?.length) {
         corpo.faq_extra = contexto.faqExtra.map(({ id, modulo, pergunta, resposta, palavras_chave }) => ({ id, modulo, pergunta, resposta, palavras_chave }))
       }
@@ -110,20 +114,37 @@ export function criarClienteChat(
       const primeira = await enviar(corpo)
       if (!primeira.consultas?.length) return primeira.confianca === 0 && !primeira.encontrou && !primeira.fonte ? primeira : { ...primeira, voltas: 1 }
 
-      // O assistente pediu dados: o front lê pela mesma API das telas e manda o resultado na segunda volta.
+      // O assistente pediu dados: o front lê pela mesma API das telas e manda o resultado na volta seguinte.
       if (!executar) return RESPOSTA_INDISPONIVEL
-      const resultados = []
-      for (const consulta of primeira.consultas.slice(0, 3)) {
-        try {
-          resultados.push({ nome: consulta.nome, args: consulta.args, resultado: await executar(consulta) })
-        } catch (e) {
-          const semPermissao = (e as { status?: number }).status === 403
-          resultados.push({ nome: consulta.nome, args: consulta.args, resultado: { erro: semPermissao ? 'o usuário não tem permissão para ver estes dados' : 'não foi possível consultar agora' } })
+      async function ler(consultas: Chamada[]) {
+        const resultados = []
+        for (const consulta of consultas.slice(0, 3)) {
+          try {
+            resultados.push({ nome: consulta.nome, args: consulta.args, resultado: await executar!(consulta) })
+          } catch (e) {
+            const semPermissao = (e as { status?: number }).status === 403
+            resultados.push({ nome: consulta.nome, args: consulta.args, resultado: { erro: semPermissao ? 'o usuário não tem permissão para ver estes dados' : 'não foi possível consultar agora' } })
+          }
         }
+        return resultados
       }
-      const segunda = await enviar({ ...corpo, resultados })
-      // uma volta só: se ainda pedir consulta, desiste em vez de entrar em laço
-      return segunda.consultas?.length ? RESPOSTA_INDISPONIVEL : { ...segunda, voltas: 2, ferramentas: primeira.consultas.map((c) => c.nome) }
+
+      // Consulta simples (sem agente): uma volta só; se ainda pedir consulta, desiste em vez de entrar em laço.
+      if (!primeira.agente) {
+        const segunda = await enviar({ ...corpo, resultados: await ler(primeira.consultas) })
+        return segunda.consultas?.length ? RESPOSTA_INDISPONIVEL : { ...segunda, voltas: 2, ferramentas: primeira.consultas.map((c) => c.nome) }
+      }
+
+      // Agente: cada volta devolve o estado da conversa junto dos resultados. Teto de voltas evita laço.
+      let resposta = primeira
+      const ferramentas: string[] = []
+      let voltas = 1
+      while (resposta.consultas?.length && voltas <= MAX_VOLTAS_DO_AGENTE) {
+        ferramentas.push(...resposta.consultas.map((c) => c.nome))
+        resposta = await enviar({ ...corpo, agente: resposta.agente, resultados: await ler(resposta.consultas) })
+        voltas += 1
+      }
+      return resposta.consultas?.length ? RESPOSTA_INDISPONIVEL : { ...resposta, voltas, ferramentas }
     },
   }
 }

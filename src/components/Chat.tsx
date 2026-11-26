@@ -1,7 +1,8 @@
 import { ArrowUp, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { atrasoDeDigitacao, montarContexto } from '../lib/chat'
-import { permissaoDaChamada } from '../lib/ferramentas'
+import { executarGravacoes, permissaoDaChamada } from '../lib/ferramentas'
+import { avisarDadosAlterados } from '../lib/useCarregar'
 import { useSessao } from '../lib/sessao'
 import { ferramentaDaResposta, montarRegistro, tipoDaResposta } from '../lib/logs'
 import { useServicos } from '../lib/servicos'
@@ -14,6 +15,8 @@ interface Mensagem {
   autor: 'usuario' | 'lumi'
   texto: string
   relacionadas?: RespostaChat['relacionadas']
+  /** Respostas sugeridas pelo agente (viram botões; clicar equivale a digitar). */
+  opcoes?: string[]
   naoEncontrou?: boolean
   fonteId?: string | null
   /** Formulário de cadastro ou confirmação de exclusão que o assistente abriu na conversa. */
@@ -59,6 +62,9 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
   const [digitando, setDigitando] = useState(false)
   const fim = useRef<HTMLDivElement>(null)
   const proximoId = useRef(1)
+  /** Conversa do agente em andamento. A API não guarda nada: o estado vem de cada resposta e volta na pergunta seguinte. */
+  const estadoAgente = useRef<Record<string, unknown> | null>(null)
+  const [agenteAtivo, setAgenteAtivo] = useState(false) // só para o botão Enviar aceitar 1 caractere durante a conversa do agente
 
   useEffect(() => {
     let vivo = true
@@ -72,9 +78,11 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
 
   async function enviar(pergunta: string) {
     const limpa = pergunta.trim()
-    if (limpa.length < 2 || digitando) return
+    if ((limpa.length < 2 && !estadoAgente.current) || limpa.length < 1 || digitando) return
     // O contexto é o que veio ANTES desta pergunta, então é montado antes de ela entrar na lista.
     const contexto = montarContexto(mensagens)
+    const agenteAntes = estadoAgente.current
+    if (agenteAntes) contexto.agente = agenteAntes
     const faqExtra = await api.faq.paraAssistente().catch(() => [])
     if (faqExtra.length) contexto.faqExtra = faqExtra
     setTexto('')
@@ -86,6 +94,22 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
     const resposta = await chat.perguntar(limpa, contexto)
     let texto = resposta.resposta
     let cartao: Cartao | undefined
+    let desfechoDoAgente: 'concluido' | 'recusado' | 'cancelado' | null = null
+    estadoAgente.current = resposta.agente ?? null
+    setAgenteAtivo(!!resposta.agente)
+    if (resposta.executar?.length) {
+      // O usuário disse "sim" na conversa: só agora o agente grava, e com as permissões de quem está logado.
+      const semPermissao = resposta.executar.some((g) => { const exigida = permissaoDaChamada(g); return !exigida || !pode(exigida) })
+      if (semPermissao) {
+        texto = 'Seu usuário não tem permissão para fazer isso. Peça a um administrador para liberar no seu grupo. Nada foi criado.'
+        desfechoDoAgente = 'recusado'
+      } else {
+        const feito = await executarGravacoes(api, resposta.executar)
+        texto = feito.texto
+        desfechoDoAgente = feito.ok ? 'concluido' : 'recusado'
+        if (feito.ok) avisarDadosAlterados()
+      }
+    } else if (agenteAntes && !resposta.agente && /cancelei/i.test(texto)) desfechoDoAgente = 'cancelado'
     if (resposta.acoes?.length) {
       const acao = resposta.acoes[0]
       const exigida = permissaoDaChamada(acao)
@@ -103,9 +127,10 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
     const restante = Math.max(0, atraso(texto) - latencia)
     await esperar(restante)
     const log = await registro
+    if (desfechoDoAgente && log?.id) void api.chatLogs.atualizar(log.id, { desfecho: desfechoDoAgente }).catch(() => {})
 
     setDigitando(false)
-    setMensagens((m) => [...m, { id: proximoId.current++, autor: 'lumi', texto, relacionadas: resposta.relacionadas, naoEncontrou: !resposta.encontrou, fonteId: resposta.fonte?.id ?? null, cartao, logId: log?.id }])
+    setMensagens((m) => [...m, { id: proximoId.current++, autor: 'lumi', texto, opcoes: resposta.opcoes, relacionadas: resposta.relacionadas, naoEncontrou: !resposta.encontrou, fonteId: resposta.fonte?.id ?? null, cartao, logId: log?.id }])
   }
 
   function avaliar(id: number, valor: 'positivo' | 'negativo') {
@@ -141,7 +166,7 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
             <div className="flex items-end gap-2">
               <Lumi tamanho={34} estado={m.naoEncontrou ? 'ocioso' : 'feliz'} />
               <div className="max-w-[85%]">
-                <p className="rounded-2xl rounded-bl-md bg-white px-4 py-2.5 text-[15px] leading-relaxed text-tinta shadow-card ring-1 ring-gelo-200">{m.texto}</p>
+                <p className="rounded-2xl rounded-bl-md bg-white px-4 py-2.5 text-[15px] leading-relaxed text-tinta shadow-card ring-1 ring-gelo-200 whitespace-pre-line">{m.texto}</p>
                 {m.logId !== undefined && (
                   <div className="mt-1 flex items-center gap-1 pl-1" role="group" aria-label="Esta resposta ajudou?">
                     {(['positivo', 'negativo'] as const).map((v) => {
@@ -154,6 +179,15 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
                         </button>
                       )
                     })}
+                  </div>
+                )}
+                {m.opcoes && m.opcoes.length > 0 && m.id === ultimaId && !digitando && (
+                  <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Respostas sugeridas">
+                    {m.opcoes.map((o) => (
+                      <button key={o} onClick={() => void enviar(o)} className="rounded-full border border-lume-300 bg-lume-50 px-3 py-1 text-left text-[13px] font-medium text-lume-700 hover:bg-lume-100">
+                        {o}
+                      </button>
+                    ))}
                   </div>
                 )}
                 {m.relacionadas && m.relacionadas.length > 0 && m.id === ultimaId && !digitando && (
@@ -198,7 +232,7 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
             className="min-w-0 flex-1 bg-transparent py-2 text-[15px] outline-none placeholder:text-tinta-mute focus-visible:!shadow-none focus-visible:!ring-0 focus-visible:!ring-offset-0"
             autoComplete="off"
           />
-          <button type="submit" aria-label="Enviar pergunta" disabled={digitando || texto.trim().length < 2} className="grid h-10 w-10 place-items-center rounded-xl bg-lume-500 text-noite-950 transition-colors hover:bg-lume-400 disabled:cursor-not-allowed disabled:bg-gelo-200 disabled:text-tinta-mute">
+          <button type="submit" aria-label="Enviar pergunta" disabled={digitando || texto.trim().length < (agenteAtivo ? 1 : 2)} className="grid h-10 w-10 place-items-center rounded-xl bg-lume-500 text-noite-950 transition-colors hover:bg-lume-400 disabled:cursor-not-allowed disabled:bg-gelo-200 disabled:text-tinta-mute">
             <ArrowUp className="h-5 w-5" aria-hidden />
           </button>
         </div>

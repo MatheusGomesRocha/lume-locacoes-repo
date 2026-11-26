@@ -111,6 +111,12 @@ export interface RespostaChat {
   consultas?: Chamada[]
   /** Cadastros e exclusões que viram cartões no chat, cada um com a confirmação do usuário. */
   acoes?: Chamada[]
+  /** Conversa do agente em andamento (criar orçamento/cliente falando no chat). O front devolve este estado na próxima mensagem; `null`/ausente = terminou. */
+  agente?: Record<string, unknown> | null
+  /** Respostas sugeridas pelo agente, mostradas como botões (clicar equivale a digitar). */
+  opcoes?: string[]
+  /** Gravações que o usuário JÁ confirmou com "sim" na conversa. É a única forma de o agente gravar algo. */
+  executar?: Chamada[]
 }
 
 /** O que aconteceu com um pedido de cadastro ou exclusão aberto no chat. */

@@ -11,6 +11,7 @@ import type { Chamada, Cliente, Orcamento, Produto } from '../types'
 import type { ClienteForm, ProdutoForm } from '../types'
 import type { OrcamentoInicial } from '../components/formularios/FormOrcamento'
 import { rotuloStatus } from './format'
+import { calcularFaltas } from './regras'
 
 export const MAX_LINHAS = 15
 
@@ -67,8 +68,68 @@ export async function executarConsulta(api: Api, chamada: Chamada): Promise<unkn
         linhas: lista.slice(0, MAX_LINHAS).map((p) => ({ orcamento: p.orcamento?.numero ?? '', cliente: p.orcamento?.cliente?.nome ?? '', valor: p.valor, vencimento: p.vencimento, pago_em: p.pago_em, status: p.status })),
       }
     }
+    case 'localizar_clientes': {
+      const lista = (await api.clientes.listar()).filter((c) => contemTodas(c.nome, texto(a.busca) ?? ''))
+      return { linhas: lista.slice(0, 6).map((c) => ({ id: c.id, nome: c.nome, cidade: c.cidade })) }
+    }
+    case 'localizar_produtos': {
+      const ativos = await api.produtos.listar({ ativo: true })
+      const buscas = Array.isArray(a.buscas) ? a.buscas.slice(0, 15) : []
+      return { itens: buscas.map((b) => ({ busca: String(b), linhas: ativos.filter((p) => contemTodas(p.nome, String(b)) || semAcento(p.codigo) === semAcento(String(b))).slice(0, 6).map((p) => ({ id: p.id, nome: p.nome, valor_diaria: p.valor_diaria })) })) }
+    }
+    case 'verificar_disponibilidade': {
+      // Só avisa: criar o rascunho não exige estoque (aprovar exige). Se não der para conferir, não bloqueia.
+      try {
+        const retirada = texto(a.retirada) ?? '', devolucao = texto(a.devolucao) ?? ''
+        const itens = (Array.isArray(a.itens) ? a.itens : []).map((i) => ({ produto_id: Number((i as Record<string, unknown>).produto_id), quantidade: Number((i as Record<string, unknown>).quantidade), valor_diaria: 0 }))
+        const [produtos, aprovados] = await Promise.all([api.produtos.listar(), api.orcamentos.listar({ status: 'aprovado' })])
+        const concorrentes = await Promise.all(aprovados.filter((o) => o.data_retirada <= devolucao && o.data_devolucao >= retirada).slice(0, 30).map((o) => (o.itens ? o : api.orcamentos.obter(o.id))))
+        const faltas = calcularFaltas({ id: 0, data_retirada: retirada, data_devolucao: devolucao, itens }, concorrentes, produtos)
+        return { faltas: faltas.map((f) => ({ produto: f.produto, solicitado: f.solicitado, disponivel: f.disponivel })) }
+      } catch {
+        return { faltas: [] }
+      }
+    }
     default:
       throw new Error(`Consulta desconhecida: ${chamada.nome}`)
+  }
+}
+
+/** Todas as palavras da busca aparecem no nome (sem acento, sem maiúsculas): "joao victor" acha "João Victor Lima". */
+function contemTodas(nome: string, busca: string): boolean {
+  const alvo = semAcento(nome)
+  const palavras = semAcento(busca).split(/\s+/).filter(Boolean)
+  return palavras.length > 0 && palavras.every((p) => alvo.includes(p))
+}
+
+// ---------------------------------------------------------------------------
+// Gravações do agente: só chegam aqui depois do "sim" do usuário na conversa
+// ---------------------------------------------------------------------------
+const brl = (v: number) => v.toLocaleString('pt-BR', { style: 'currency', currency: 'BRL' })
+
+/** Executa o que o agente devolveu em `executar`, pela MESMA API das telas (então valem as mesmas regras e permissões). */
+export async function executarGravacoes(api: Api, gravacoes: Chamada[]): Promise<{ ok: boolean; texto: string }> {
+  let clienteNovo: Cliente | null = null
+  const feitos: string[] = []
+  try {
+    for (const g of gravacoes) {
+      const a = g.args
+      if (g.nome === 'criar_cliente') {
+        const form: ClienteForm = { nome: String(a.nome ?? ''), tipo: a.tipo === 'PJ' ? 'PJ' : 'PF', documento: texto(a.documento) ?? null, email: texto(a.email) ?? null, telefone: texto(a.telefone) ?? null, cidade: texto(a.cidade) ?? null, observacoes: texto(a.observacoes) ?? null }
+        clienteNovo = await api.clientes.criar(form)
+        feitos.push(`Cliente “${clienteNovo.nome}” cadastrado.`)
+      } else if (g.nome === 'criar_orcamento') {
+        const clienteId = a.cliente_novo ? clienteNovo?.id : numero(a.cliente_id)
+        if (!clienteId) throw new Error('Não achei o cliente deste orçamento.')
+        const itens = (Array.isArray(a.itens) ? a.itens : []).map((i) => ({ produto_id: Number((i as Record<string, unknown>).produto_id), quantidade: Number((i as Record<string, unknown>).quantidade) }))
+        const o = await api.orcamentos.criar({ cliente_id: clienteId, evento: String(a.evento ?? ''), data_retirada: String(a.data_retirada ?? ''), data_devolucao: String(a.data_devolucao ?? ''), desconto: numero(a.desconto) ?? 0, observacoes: texto(a.observacoes) ?? '', itens })
+        feitos.push(`Orçamento ${o.numero} criado como rascunho (${brl(o.total)}).`)
+      }
+    }
+    return { ok: true, texto: feitos.join(' ') || 'Nada para criar.' }
+  } catch (e) {
+    const motivo = e instanceof Error ? e.message : 'Algo deu errado.'
+    return { ok: false, texto: `${feitos.join(' ')}${feitos.length ? ' ' : ''}Não consegui concluir: ${motivo}`.trim() }
   }
 }
 
@@ -184,6 +245,12 @@ const PERMISSAO_DA_FERRAMENTA: Record<string, string> = {
   cadastrar_cliente: 'clientes.criar',
   cadastrar_produto: 'produtos.criar',
   cadastrar_orcamento: 'orcamentos.criar',
+  // leituras e gravações do agente conversacional
+  localizar_clientes: 'clientes.ver',
+  localizar_produtos: 'produtos.ver',
+  verificar_disponibilidade: 'orcamentos.ver',
+  criar_cliente: 'clientes.criar',
+  criar_orcamento: 'orcamentos.criar',
 }
 const MODULO_DA_EXCLUSAO: Record<string, string> = { cliente: 'clientes', produto: 'produtos', orcamento: 'orcamentos' }
 
