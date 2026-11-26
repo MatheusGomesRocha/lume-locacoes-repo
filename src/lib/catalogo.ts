@@ -39,6 +39,7 @@ const ENTIDADES: Record<string, { soAdmin: boolean; campos: Record<string, TipoC
   orcamentos: { soAdmin: false, campos: { numero: 'texto', cliente_nome: 'texto', evento: 'texto', status: 'enum', data_retirada: 'data', data_devolucao: 'data', diarias: 'numero', desconto: 'numero', total: 'numero' } },
   pagamentos: { soAdmin: false, campos: { orcamento_numero: 'texto', valor: 'numero', vencimento: 'data', pago_em: 'data', status: 'enum', forma: 'enum' } },
   usuarios: { soAdmin: true, campos: { nome: 'texto', papel: 'enum', grupo_nome: 'texto', ativo: 'bool' } },
+  grupos: { soAdmin: true, campos: { nome: 'texto', descricao: 'texto', sistema: 'bool', usuarios_count: 'numero', permissoes_count: 'numero' } },
 }
 
 export class ErroConsulta extends Error {
@@ -163,6 +164,8 @@ export async function carregarEntidade(api: Api, entidade: string): Promise<Linh
       return (await api.pagamentos.listar('todos')).map((p) => ({ orcamento_numero: p.orcamento?.numero ?? null, valor: p.valor, vencimento: p.vencimento, pago_em: p.pago_em, status: p.status, forma: p.forma }))
     case 'usuarios':
       return (await api.usuarios.listar()).map((u) => ({ nome: u.nome, papel: u.papel, grupo_nome: u.grupo?.nome ?? null, ativo: u.ativo }))
+    case 'grupos':
+      return (await api.grupos.listar()).map((g) => ({ nome: g.nome, descricao: g.descricao ?? null, sistema: g.sistema, usuarios_count: g.usuarios_count, permissoes_count: g.permissoes.length }))
     default:
       throw new ErroConsulta('entidade desconhecida', 'erro')
   }

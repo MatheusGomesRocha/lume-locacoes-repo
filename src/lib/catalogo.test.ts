@@ -4,7 +4,7 @@ import { MASTER_EMAIL, SENHA_DEMO } from '../api/acesso'
 import { criarApiLocal } from '../api/local'
 import { HOJE, memoria } from '../test/utils'
 import { criarClienteChat } from './chat'
-import { ErroConsulta, executarSpec, type Linha, type SessaoConsulta, type SpecConsulta } from './catalogo'
+import { ErroConsulta, carregarEntidade, executarSpec, type Linha, type SessaoConsulta, type SpecConsulta } from './catalogo'
 import { executarConsulta } from './ferramentas'
 
 interface Vetores {
@@ -85,5 +85,17 @@ describe('consulta aprovada no chat, de ponta a ponta', () => {
   it('parâmetro inválido volta como erro legível, sem ler dados', async () => {
     const api = await apiComConsultaAprovada()
     expect(await executarConsulta(api, { nome: 'catalogo', args: { nome: SPEC.nome, params: { papel: 'root' } } })).toEqual({ erro: 'valor fora da lista: root' })
+  })
+})
+
+describe('entidade grupos de permissão', () => {
+  it('conta os grupos que a tela de grupos mostra e fica só para administrador', async () => {
+    const api = criarApiLocal({ storage: memoria(), agora: () => HOJE })
+    const sessao = await api.auth.entrar(MASTER_EMAIL, SENHA_DEMO)
+    const spec: SpecConsulta = { nome: 'contar_grupos', entidade: 'grupos', operacao: 'contar', permissao: 'usuarios.ver', papel_minimo: 'admin', parametros: {}, filtros: [], exemplos: ['quantos grupos de permissão temos', 'total de grupos', 'quantos grupos existem'] }
+    const linhas = await carregarEntidade(api, 'grupos')
+    const ctx = { papel: sessao.usuario.papel, permissoes: sessao.permissoes }
+    expect(executarSpec(spec, {}, { grupos: linhas }, ctx)).toEqual({ total: (await api.grupos.listar()).length })
+    expect(() => executarSpec(spec, {}, { grupos: linhas }, { papel: 'usuario', permissoes: ['usuarios.ver'] })).toThrow(ErroConsulta)
   })
 })
