@@ -35,6 +35,12 @@ export function criarApiHttp(baseUrl: string, buscar: typeof fetch = (...a) => f
   return {
     modo: 'http',
     dashboard: () => chamar('GET', '/dashboard'),
+    chatLogs: {
+      listar: (f = {}) => chamar('GET', '/chat-logs' + qs({ tipo: f.tipo, feedback: f.feedback })),
+      registrar: (d) => chamar('POST', '/chat-logs', d),
+      atualizar: (id, ajuste) => chamar('PATCH', `/chat-logs/${id}`, ajuste),
+      limpar: () => chamar('DELETE', '/chat-logs'),
+    },
     clientes: {
       listar: (busca) => chamar('GET', '/clientes' + qs({ q: busca })),
       criar: (d) => chamar('POST', '/clientes', d),

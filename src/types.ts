@@ -101,8 +101,40 @@ export interface RespostaChat {
   relacionadas: { id: string; pergunta: string }[]
   usou_contexto?: boolean
   gerada_por_llm?: boolean
+  /** A resposta veio do cache da API (não gastou chamada ao modelo). */
+  em_cache?: boolean
+  /** Quantas idas à API foram necessárias (2 quando houve consulta de dados). */
+  voltas?: number
+  /** Nomes das consultas que o front executou para chegar a esta resposta. */
+  ferramentas?: string[]
   /** Consultas que o front deve executar e devolver (a resposta final vem na segunda volta). */
   consultas?: Chamada[]
   /** Cadastros e exclusões que viram cartões no chat, cada um com a confirmação do usuário. */
   acoes?: Chamada[]
 }
+
+/** O que aconteceu com um pedido de cadastro ou exclusão aberto no chat. */
+export type Desfecho = 'concluido' | 'cancelado' | 'recusado'
+export type TipoLog = 'ajuda' | 'consulta' | 'cadastro' | 'exclusao' | 'nao_encontrou' | 'erro'
+export const TIPOS_LOG: TipoLog[] = ['ajuda', 'consulta', 'cadastro', 'exclusao', 'nao_encontrou', 'erro']
+
+/** Uma pergunta feita ao assistente e como ela foi respondida (observabilidade). Não guarda os dados que a consulta leu. */
+export interface ChatLog {
+  id: number
+  criado_em: string
+  pergunta: string
+  resposta: string
+  tipo: TipoLog
+  fonte_id: string | null
+  ferramenta: string | null
+  gerada_por_llm: boolean
+  em_cache: boolean
+  usou_contexto: boolean
+  latencia_ms: number
+  voltas: number
+  feedback: 'positivo' | 'negativo' | null
+  desfecho: Desfecho | null
+  usuario?: string | null
+}
+export type ChatLogForm = Omit<ChatLog, 'id' | 'criado_em' | 'feedback' | 'desfecho' | 'usuario'>
+export type ChatLogAjuste = Partial<Pick<ChatLog, 'feedback' | 'desfecho'>>

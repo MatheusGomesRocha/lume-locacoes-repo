@@ -4,7 +4,7 @@ import { ApiError } from '../api/tipos'
 import { excluir, localizarParaExcluir, prepararCadastro, ROTULO_MODULO, type Alvo, type ModuloExclusao, type PreparoCadastro } from '../lib/ferramentas'
 import { useApi } from '../lib/servicos'
 import { avisarDadosAlterados } from '../lib/useCarregar'
-import type { Chamada } from '../types'
+import type { Chamada, Desfecho } from '../types'
 import { FormCliente } from './formularios/FormCliente'
 import { FormOrcamento } from './formularios/FormOrcamento'
 import { FormProduto } from './formularios/FormProduto'
@@ -16,7 +16,7 @@ export type Cartao =
   | { tipo: 'cadastro'; preparo: PreparoCadastro; fim?: Fim }
   | { tipo: 'exclusao'; alvos: Alvo[]; fim?: Fim }
 
-export interface Fim { ok: boolean; texto: string }
+export interface Fim { ok: boolean; texto: string; desfecho: Desfecho }
 
 const TITULO_CADASTRO = { cliente: 'Novo cliente', produto: 'Novo produto', orcamento: 'Novo orçamento' }
 
@@ -54,8 +54,8 @@ function Final({ fim }: { fim: Fim }) {
 
 export function CartaoCadastro({ preparo, fim, aoFinalizar }: { preparo: PreparoCadastro; fim?: Fim; aoFinalizar: (f: Fim) => void }) {
   if (fim) return <Final fim={fim} />
-  const cancelar = () => aoFinalizar({ ok: false, texto: `${TITULO_CADASTRO[preparo.modulo]} cancelado. Nada foi salvo.` })
-  const salvo = (texto: string) => { avisarDadosAlterados(); aoFinalizar({ ok: true, texto }) }
+  const cancelar = () => aoFinalizar({ ok: false, desfecho: 'cancelado', texto: `${TITULO_CADASTRO[preparo.modulo]} cancelado. Nada foi salvo.` })
+  const salvo = (texto: string) => { avisarDadosAlterados(); aoFinalizar({ ok: true, desfecho: 'concluido', texto }) }
   return (
     <section aria-label={TITULO_CADASTRO[preparo.modulo]} className="rounded-2xl bg-white p-4 shadow-card ring-1 ring-gelo-200">
       <h3 className="text-[15px] font-bold text-noite-900">{TITULO_CADASTRO[preparo.modulo]}</h3>
@@ -83,10 +83,10 @@ export function CartaoExclusao({ alvos, fim, aoFinalizar }: { alvos: Alvo[]; fim
     try {
       await excluir(api, escolhido)
       avisarDadosAlterados()
-      aoFinalizar({ ok: true, texto: `${escolhido.rotulo} foi excluído.` })
+      aoFinalizar({ ok: true, desfecho: 'concluido', texto: `${escolhido.rotulo} foi excluído.` })
     } catch (e) {
       // A regra vem da própria API (a mesma das telas): mostramos a mensagem dela.
-      aoFinalizar({ ok: false, texto: e instanceof ApiError || e instanceof Error ? e.message : 'Não foi possível excluir.' })
+      aoFinalizar({ ok: false, desfecho: 'recusado', texto: e instanceof ApiError || e instanceof Error ? e.message : 'Não foi possível excluir.' })
     }
   }
 
@@ -99,7 +99,7 @@ export function CartaoExclusao({ alvos, fim, aoFinalizar }: { alvos: Alvo[]; fim
             <li key={a.id}><button onClick={() => setEscolhido(a)} className="w-full rounded-xl border border-gelo-300 px-3 py-2 text-left text-[14px] hover:border-lume-500 hover:bg-lume-50">{a.rotulo}</button></li>
           ))}
         </ul>
-        <Botao variante="fantasma" pequeno className="mt-3" onClick={() => aoFinalizar({ ok: false, texto: 'Exclusão cancelada. Nada foi excluído.' })}>Cancelar</Botao>
+        <Botao variante="fantasma" pequeno className="mt-3" onClick={() => aoFinalizar({ ok: false, desfecho: 'cancelado', texto: 'Exclusão cancelada. Nada foi excluído.' })}>Cancelar</Botao>
       </section>
     )
   }
@@ -110,7 +110,7 @@ export function CartaoExclusao({ alvos, fim, aoFinalizar }: { alvos: Alvo[]; fim
       <p className="mt-1.5 text-[14px] font-semibold text-noite-900">{escolhido.rotulo}</p>
       <p className="mt-1 text-[13px] text-tinta-soft">{AVISO_DA_REGRA[escolhido.modulo]}</p>
       <div className="mt-3 flex justify-end gap-2">
-        <Botao variante="secundario" pequeno onClick={() => aoFinalizar({ ok: false, texto: 'Exclusão cancelada. Nada foi excluído.' })} disabled={excluindo}>Cancelar</Botao>
+        <Botao variante="secundario" pequeno onClick={() => aoFinalizar({ ok: false, desfecho: 'cancelado', texto: 'Exclusão cancelada. Nada foi excluído.' })} disabled={excluindo}>Cancelar</Botao>
         <Botao variante="perigo" pequeno carregando={excluindo} onClick={() => void confirmar()}>Confirmar exclusão</Botao>
       </div>
     </section>

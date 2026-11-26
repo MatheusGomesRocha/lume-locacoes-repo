@@ -1,4 +1,5 @@
 import type {
+  ChatLog, ChatLogAjuste, ChatLogForm, TipoLog,
   Cliente, ClienteForm, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, ProdutoForm, Resumo, StatusOrcamento,
 } from '../types'
 import type { Falta } from '../lib/regras'
@@ -53,6 +54,13 @@ export interface Api {
   pagamentos: {
     listar(filtro?: FiltroPagamento): Promise<Pagamento[]>
     baixar(id: number, pagoEm: string, forma: FormaPagamento): Promise<Pagamento>
+  }
+  /** Registro das conversas com o assistente. */
+  chatLogs: {
+    listar(filtros?: { tipo?: TipoLog; feedback?: 'positivo' | 'negativo' }): Promise<ChatLog[]>
+    registrar(dados: ChatLogForm): Promise<ChatLog>
+    atualizar(id: number, ajuste: ChatLogAjuste): Promise<ChatLog>
+    limpar(): Promise<void>
   }
   /** Só existe na versão local: volta aos dados de exemplo. */
   restaurarExemplo?(): Promise<void>

@@ -190,6 +190,23 @@ describe('Assistente e navegação', () => {
     expect(screen.queryByRole('button', { name: 'Abrir assistente' })).toBeNull() // sem o botão flutuante nesta página
   })
 
+  it('cada pergunta vira um registro, com avaliação, e aparece na tela de conversas', async () => {
+    const servicos = servicosDeTeste({ chat: chatFalso({ resposta: 'Vá em Orçamentos.' }) })
+    const { unmount } = renderizar('/assistente', servicos)
+    await userEvent.type(await screen.findByPlaceholderText(/Pergunte algo/i), 'Como crio um orçamento?{enter}')
+    await userEvent.click(await screen.findByRole('button', { name: 'Resposta útil' }, { timeout: 4000 }))
+    await waitFor(async () => expect((await servicos.api.chatLogs.listar())[0]).toMatchObject({ pergunta: 'Como crio um orçamento?', tipo: 'ajuda', feedback: 'positivo' }))
+    unmount()
+    renderizar('/assistente/conversas', servicos)
+    expect(await screen.findByRole('heading', { name: 'Conversas do assistente' })).toBeInTheDocument()
+    expect(await screen.findByText('Como crio um orçamento?')).toBeInTheDocument()
+    expect(screen.getByText('Útil')).toBeInTheDocument()
+
+    await userEvent.click(screen.getByRole('button', { name: /Apagar registros/ }))
+    await userEvent.click(within(await screen.findByRole('dialog')).getByRole('button', { name: 'Apagar' }))
+    expect(await screen.findByText('Nenhum registro')).toBeInTheDocument()
+  })
+
   it('o botão flutuante abre e fecha a conversa nas outras telas', async () => {
     renderizar('/clientes')
     await userEvent.click(await screen.findByRole('button', { name: 'Abrir assistente' }))

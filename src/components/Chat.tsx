@@ -1,6 +1,7 @@
-import { ArrowUp, Sparkles } from 'lucide-react'
+import { ArrowUp, Sparkles, ThumbsDown, ThumbsUp } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { atrasoDeDigitacao, montarContexto } from '../lib/chat'
+import { ferramentaDaResposta, montarRegistro, tipoDaResposta } from '../lib/logs'
 import { useServicos } from '../lib/servicos'
 import { montarCartao, CartaoCadastro, CartaoExclusao, type Cartao, type Fim } from './CartoesChat'
 import type { RespostaChat } from '../types'
@@ -15,6 +16,9 @@ interface Mensagem {
   fonteId?: string | null
   /** Formulário de cadastro ou confirmação de exclusão que o assistente abriu na conversa. */
   cartao?: Cartao
+  /** Registro desta resposta no log do assistente, para o feedback e o desfecho. */
+  logId?: number
+  feedback?: 'positivo' | 'negativo'
 }
 
 const esperarPadrao = (ms: number) => new Promise<void>((r) => setTimeout(r, ms))
@@ -82,14 +86,29 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
       if ('cartao' in montado) cartao = montado.cartao
       else texto = montado.texto
     }
-    const restante = Math.max(0, atraso(texto) - (Date.now() - inicio))
+    const latencia = Date.now() - inicio
+    // Registrar é observabilidade: acontece em paralelo à "digitação" e uma falha aqui nunca atrapalha a conversa.
+    const registro = api.chatLogs
+      .registrar(montarRegistro(limpa, resposta, texto, latencia, ferramentaDaResposta(resposta), tipoDaResposta(resposta, texto)))
+      .catch(() => null)
+    const restante = Math.max(0, atraso(texto) - latencia)
     await esperar(restante)
+    const log = await registro
 
     setDigitando(false)
-    setMensagens((m) => [...m, { id: proximoId.current++, autor: 'lumi', texto, relacionadas: resposta.relacionadas, naoEncontrou: !resposta.encontrou, fonteId: resposta.fonte?.id ?? null, cartao }])
+    setMensagens((m) => [...m, { id: proximoId.current++, autor: 'lumi', texto, relacionadas: resposta.relacionadas, naoEncontrou: !resposta.encontrou, fonteId: resposta.fonte?.id ?? null, cartao, logId: log?.id }])
+  }
+
+  function avaliar(id: number, valor: 'positivo' | 'negativo') {
+    const alvo = mensagens.find((x) => x.id === id)
+    if (!alvo?.logId || alvo.feedback) return
+    setMensagens((m) => m.map((x) => (x.id === id ? { ...x, feedback: valor } : x)))
+    void api.chatLogs.atualizar(alvo.logId, { feedback: valor }).catch(() => {})
   }
 
   function finalizarCartao(id: number, fim: Fim) {
+    const alvo = mensagens.find((x) => x.id === id)
+    if (alvo?.logId) void api.chatLogs.atualizar(alvo.logId, { desfecho: fim.desfecho }).catch(() => {})
     setMensagens((m) => m.map((x) => (x.id === id && x.cartao ? { ...x, cartao: { ...x.cartao, fim } } : x)))
   }
 
@@ -114,6 +133,20 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
               <Lumi tamanho={34} estado={m.naoEncontrou ? 'ocioso' : 'feliz'} />
               <div className="max-w-[85%]">
                 <p className="rounded-2xl rounded-bl-md bg-white px-4 py-2.5 text-[15px] leading-relaxed text-tinta shadow-card ring-1 ring-gelo-200">{m.texto}</p>
+                {m.logId !== undefined && (
+                  <div className="mt-1 flex items-center gap-1 pl-1" role="group" aria-label="Esta resposta ajudou?">
+                    {(['positivo', 'negativo'] as const).map((v) => {
+                      const Icone = v === 'positivo' ? ThumbsUp : ThumbsDown
+                      const marcado = m.feedback === v
+                      return (
+                        <button key={v} onClick={() => avaliar(m.id, v)} disabled={!!m.feedback} aria-label={v === 'positivo' ? 'Resposta útil' : 'Resposta ruim'} aria-pressed={marcado}
+                          className={`rounded-lg p-1.5 transition-colors disabled:cursor-default ${marcado ? 'bg-lume-100 text-lume-700' : 'text-tinta-mute hover:bg-gelo-100 hover:text-tinta disabled:opacity-40'}`}>
+                          <Icone className="h-3.5 w-3.5" aria-hidden />
+                        </button>
+                      )
+                    })}
+                  </div>
+                )}
                 {m.relacionadas && m.relacionadas.length > 0 && m.id === ultimaId && !digitando && (
                   <div className="mt-2 flex flex-wrap gap-1.5">
                     <span className="w-full text-xs text-tinta-mute">{m.naoEncontrou ? 'Talvez você queira saber:' : 'Veja também:'}</span>

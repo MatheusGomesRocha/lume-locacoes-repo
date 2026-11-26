@@ -5,6 +5,7 @@ import Clientes from './pages/Clientes'
 import Financeiro from './pages/Financeiro'
 import OrcamentoDetalhe from './pages/OrcamentoDetalhe'
 import OrcamentoForm from './pages/OrcamentoForm'
+import LogsAssistente from './pages/LogsAssistente'
 import Orcamentos from './pages/Orcamentos'
 import Painel from './pages/Painel'
 import Produtos from './pages/Produtos'
@@ -22,6 +23,7 @@ export default function App() {
         <Route path="produtos" element={<Produtos />} />
         <Route path="clientes" element={<Clientes />} />
         <Route path="assistente" element={<Assistente />} />
+        <Route path="assistente/conversas" element={<LogsAssistente />} />
         <Route path="*" element={<Navigate to="/" replace />} />
       </Route>
     </Routes>

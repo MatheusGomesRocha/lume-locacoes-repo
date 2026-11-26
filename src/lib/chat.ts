@@ -103,7 +103,7 @@ export function criarClienteChat(
       }
 
       const primeira = await enviar(corpo)
-      if (!primeira.consultas?.length) return primeira
+      if (!primeira.consultas?.length) return primeira.confianca === 0 && !primeira.encontrou && !primeira.fonte ? primeira : { ...primeira, voltas: 1 }
 
       // O assistente pediu dados: o front lê pela mesma API das telas e manda o resultado na segunda volta.
       if (!executar) return RESPOSTA_INDISPONIVEL
@@ -117,7 +117,7 @@ export function criarClienteChat(
       }
       const segunda = await enviar({ ...corpo, resultados })
       // uma volta só: se ainda pedir consulta, desiste em vez de entrar em laço
-      return segunda.consultas?.length ? RESPOSTA_INDISPONIVEL : segunda
+      return segunda.consultas?.length ? RESPOSTA_INDISPONIVEL : { ...segunda, voltas: 2, ferramentas: primeira.consultas.map((c) => c.nome) }
     },
   }
 }

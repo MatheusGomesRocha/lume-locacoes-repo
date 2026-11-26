@@ -1,4 +1,4 @@
-import { Banknote, Boxes, LayoutDashboard, Menu, MessageCircle, RotateCcw, ScrollText, Users, X } from 'lucide-react'
+import { Banknote, Boxes, LayoutDashboard, Menu, MessageCircle, RotateCcw, ScrollText, History, Users, X } from 'lucide-react'
 import { useState } from 'react'
 import { NavLink, Outlet, useLocation } from 'react-router-dom'
 import { useServicos } from '../lib/servicos'
@@ -11,7 +11,8 @@ const itens = [
   { para: '/financeiro', rotulo: 'Financeiro', Icone: Banknote },
   { para: '/produtos', rotulo: 'Produtos', Icone: Boxes },
   { para: '/clientes', rotulo: 'Clientes', Icone: Users },
-  { para: '/assistente', rotulo: 'Assistente', Icone: MessageCircle },
+  { para: '/assistente', rotulo: 'Assistente', Icone: MessageCircle, fim: true },
+  { para: '/assistente/conversas', rotulo: 'Conversas', Icone: History },
 ]
 
 function Marca() {

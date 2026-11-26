@@ -6,10 +6,12 @@ import seedPadrao from '../data/seed.json'
 import { hojeISO } from '../lib/format'
 import { calcularFaltas, calcularTotal, diarias, podeAprovar, podeCancelar, podeEditar, podeEnviar, podeExcluir, podeFinalizar, proximoNumero } from '../lib/regras'
 import { STATUS_ORCAMENTO } from '../types'
-import type { Cliente, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, Resumo, StatusOrcamento } from '../types'
+import type { ChatLog, Cliente, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, Resumo, StatusOrcamento } from '../types'
 import { ApiError, type Api, type FiltroPagamento } from './tipos'
 
 export const CHAVE_STORAGE = 'lume:v1'
+/** Quantos registros do assistente a demonstração guarda (os mais antigos saem). */
+export const MAX_LOGS = 500
 
 interface ItemSalvo { produto_id: number; quantidade: number; valor_diaria: number }
 interface OrcamentoSalvo extends Omit<Orcamento, 'cliente' | 'itens' | 'pagamentos' | 'diarias'> { itens: ItemSalvo[] }
@@ -18,6 +20,8 @@ interface Banco {
   produtos: Produto[]
   orcamentos: OrcamentoSalvo[]
   pagamentos: Pagamento[]
+  /** Ausente em dados salvos por versões antigas. */
+  chat_logs?: ChatLog[]
 }
 
 export interface Seed {
@@ -204,6 +208,32 @@ export function criarApiLocal({ storage = localStorage, agora = () => new Date()
             data_retirada: o.data_retirada, data_devolucao: o.data_devolucao, total: o.total,
           })),
       }
+    },
+
+    chatLogs: {
+      async listar({ tipo, feedback } = {}) {
+        return (ler().chat_logs ?? []).filter((l) => (!tipo || l.tipo === tipo) && (!feedback || l.feedback === feedback)).sort((x, y) => y.id - x.id)
+      },
+      async registrar(d) {
+        const b = ler()
+        const logs = b.chat_logs ?? []
+        const novo: ChatLog = { ...d, id: proximoId(logs), criado_em: agora().toISOString(), feedback: null, desfecho: null }
+        b.chat_logs = [...logs, novo].slice(-MAX_LOGS)
+        gravar(b)
+        return clonar(novo)
+      },
+      async atualizar(id, ajuste) {
+        const b = ler()
+        const log = achar(b.chat_logs ?? [], id)
+        Object.assign(log, ajuste)
+        gravar(b)
+        return clonar(log)
+      },
+      async limpar() {
+        const b = ler()
+        b.chat_logs = []
+        gravar(b)
+      },
     },
 
     clientes: {
