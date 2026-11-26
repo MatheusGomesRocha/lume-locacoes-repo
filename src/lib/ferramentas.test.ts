@@ -35,6 +35,22 @@ describe('consultas (só leitura, poucos campos)', () => {
     expect(r.total).toBe(todos.filter((o) => o.data_retirada === alvo).length)
   })
 
+  it('filtra orçamentos pela data de devolução, que é outra data', async () => {
+    const api = nova()
+    const todos = await api.orcamentos.listar()
+    const alvo = todos[0].data_devolucao
+    const r = (await executarConsulta(api, { nome: 'consultar_orcamentos', args: { devolucao_de: alvo, devolucao_ate: alvo } })) as { total: number }
+    expect(r.total).toBe(todos.filter((o) => o.data_devolucao === alvo).length)
+  })
+
+  it('filtra cobranças pelo vencimento', async () => {
+    const api = nova()
+    const todas = await api.pagamentos.listar('todos')
+    const alvo = todas[0].vencimento
+    const r = (await executarConsulta(api, { nome: 'consultar_cobrancas', args: { vencimento_de: alvo, vencimento_ate: alvo } })) as { total: number }
+    expect(r.total).toBe(todas.filter((p) => p.vencimento === alvo).length)
+  })
+
   it('clientes saem sem documento, e-mail, telefone ou observações', async () => {
     const r = (await executarConsulta(nova(), { nome: 'consultar_clientes', args: { busca: 'Fortaleza' } })) as { total: number; linhas: Record<string, unknown>[] }
     expect(r.total).toBeGreaterThan(0)

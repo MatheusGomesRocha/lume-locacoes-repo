@@ -42,8 +42,10 @@ export async function executarConsulta(api: Api, chamada: Chamada): Promise<unkn
       const status = texto(a.status) as Orcamento['status'] | undefined
       const de = texto(a.retirada_de)
       const ate = texto(a.retirada_ate)
+      const devDe = texto(a.devolucao_de)
+      const devAte = texto(a.devolucao_ate)
       const lista = (await api.orcamentos.listar({ busca: texto(a.busca), status: status ?? '' }))
-        .filter((o) => (!de || o.data_retirada >= de) && (!ate || o.data_retirada <= ate))
+        .filter((o) => (!de || o.data_retirada >= de) && (!ate || o.data_retirada <= ate) && (!devDe || o.data_devolucao >= devDe) && (!devAte || o.data_devolucao <= devAte))
       return {
         total: lista.length,
         soma_dos_totais: soma(lista.map((o) => o.total)),
@@ -63,7 +65,9 @@ export async function executarConsulta(api: Api, chamada: Chamada): Promise<unkn
     }
     case 'consultar_cobrancas': {
       const situacao = (texto(a.situacao) ?? 'todos') as 'todos' | 'pendente' | 'atrasado' | 'pago' | 'cancelado'
-      const lista = await api.pagamentos.listar(situacao)
+      const venDe = texto(a.vencimento_de)
+      const venAte = texto(a.vencimento_ate)
+      const lista = (await api.pagamentos.listar(situacao)).filter((p) => (!venDe || p.vencimento >= venDe) && (!venAte || p.vencimento <= venAte))
       return {
         total: lista.length,
         soma_dos_valores: soma(lista.map((p) => p.valor)),
