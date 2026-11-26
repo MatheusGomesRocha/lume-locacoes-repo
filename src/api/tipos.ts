@@ -1,8 +1,9 @@
 import type {
-  ChatLog, ChatLogAjuste, ChatLogForm, FaqForm, FaqItem, TipoLog,
+  ChatLog, ChatLogAjuste, ChatLogForm, FaqForm, FaqItem, RelatorioEvolucao, TipoLog,
   Grupo, GrupoForm, MinhaContaForm, Sessao, Usuario, UsuarioForm,
   Cliente, ClienteForm, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, ProdutoForm, Resumo, StatusOrcamento,
 } from '../types'
+import type { SpecConsulta } from '../lib/catalogo'
 import type { Falta } from '../lib/regras'
 
 /** Erro de uma chamada: mensagem para mostrar ao usuário, status HTTP e detalhes opcionais. */
@@ -64,6 +65,18 @@ export interface Api {
     excluir(id: number): Promise<void>
     /** O que o chat manda à API junto da pergunta. Na versão real o Laravel já anexa por conta própria, então volta vazio. */
     paraAssistente(): Promise<FaqItem[]>
+  }
+  /** Consultas novas criadas pelos Agents (ver ia-api/evolucao). Só o master analisa e decide; quem usa o chat só lê o catálogo aprovado. */
+  evolucao: {
+    /** Consultas aprovadas e ativas (o que o chat pode executar). */
+    catalogo(): Promise<SpecConsulta[]>
+    /** O que o chat manda à API junto da pergunta. Na versão real o Laravel já anexa por conta própria, então volta vazio. */
+    paraAssistente(): Promise<SpecConsulta[]>
+    listar(): Promise<RelatorioEvolucao[]>
+    /** Roda os 3 Agents sobre as perguntas sem resposta e guarda os relatórios como pendentes. */
+    analisar(): Promise<{ novos: RelatorioEvolucao[]; semPerguntas: boolean }>
+    decidir(id: string, aprovar: boolean): Promise<RelatorioEvolucao>
+    desativar(id: string): Promise<RelatorioEvolucao>
   }
   /** Login e sessão. */
   auth: {

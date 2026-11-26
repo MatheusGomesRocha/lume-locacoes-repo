@@ -198,3 +198,29 @@ export interface Sessao {
   permissoes: string[]
 }
 export interface MinhaContaForm { nome: string; email: string; senha_atual?: string; nova_senha?: string }
+
+// ---------------------------------------------------------------------------
+// Evolução assistida: consultas novas propostas pelos Agents, que o master aprova ou reprova
+// ---------------------------------------------------------------------------
+export type VereditoEvolucao = 'aprovar_recomendado' | 'revisar_com_atencao' | 'reprovar_recomendado'
+export type StatusEvolucao = 'pendente' | 'aprovada' | 'reprovada'
+export interface RelatorioEvolucao {
+  id: string
+  titulo: string
+  decisao_do_analista: string
+  motivo?: string | null
+  perguntas: string[]
+  vezes: number
+  status: StatusEvolucao
+  veredito: VereditoEvolucao | null
+  /** O relatório completo em markdown simples: o que cada Agent fez, o que foi verificado, o que NÃO foi provado. */
+  texto: string
+  /** O que o Analista propôs (a API pede de volta ao refazer as checagens). */
+  proposta?: Record<string, unknown>
+  pacote: { spec: import('./lib/catalogo').SpecConsulta; regras_declaradas?: string[] } | null
+  avaliacao: { selo: string | null; resumo: { casos: number; passaram: number; falharam: number; bloqueios: number; avisos: number } } | null
+  /** Consulta ativa no catálogo (só vale para aprovadas). */
+  ativa: boolean
+  decisao?: { por: string; em: string } | null
+  criado_em: string
+}

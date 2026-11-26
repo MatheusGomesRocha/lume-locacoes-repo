@@ -1,6 +1,7 @@
 import { EyeOff, MessageSquarePlus, Pencil, Trash2 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import { mensagemDeErro } from '../components/Formulario'
+import { EvolucaoMaster } from '../components/EvolucaoMaster'
 import { Botao, Cabecalho, Campo, CaixaErro, Carregando, Confirmar, Modal, Vazio, useAviso } from '../components/ui'
 import { errosDeCampos } from '../components/Formulario'
 import { ROTULO_TIPO, pendentesDeResposta, quantasVezesPerguntaram, resumirLogs, sugerirPergunta } from '../lib/logs'
@@ -81,6 +82,7 @@ export default function LogsAssistente() {
   const [tipo, setTipo] = useState<TipoLog | ''>('')
   const [soRuins, setSoRuins] = useState(false)
   const [limpando, setLimpando] = useState(false)
+  const [aba, setAba] = useState<'conversas' | 'evolucao'>('conversas')
   const { pode } = useSessao()
   const master = pode(PERMISSAO_SO_MASTER)
   const [respondendo, setRespondendo] = useState<{ item: FaqItem | null; pergunta: string } | null>(null)
@@ -135,7 +137,16 @@ export default function LogsAssistente() {
       <Cabecalho titulo="Conversas do assistente" descricao="O que foi perguntado, como foi respondido e quanto custou. Perguntas sem resposta mostram o que falta no FAQ."
         acoes={<Botao variante="secundario" onClick={() => setLimpando(true)} disabled={!r.total}><Trash2 className="h-4 w-4" aria-hidden /> Apagar registros</Botao>} />
 
-      {todos.carregando ? <Carregando /> : todos.erro ? <CaixaErro mensagem={todos.erro} aoTentar={() => void todos.recarregar()} /> : (
+      {master && (
+        <div role="tablist" aria-label="Seções" className="mb-5 flex gap-2 border-b border-gelo-200">
+          {([['conversas', 'Conversas'], ['evolucao', 'Evolução da Lumi']] as const).map(([id, rotulo]) => (
+            <button key={id} role="tab" aria-selected={aba === id} onClick={() => setAba(id)}
+              className={`-mb-px border-b-2 px-4 py-2 text-[15px] font-semibold ${aba === id ? 'border-lume-600 text-lume-700' : 'border-transparent text-tinta-soft hover:text-tinta'}`}>{rotulo}</button>
+          ))}
+        </div>
+      )}
+
+      {master && aba === 'evolucao' ? <EvolucaoMaster /> : todos.carregando ? <Carregando /> : todos.erro ? <CaixaErro mensagem={todos.erro} aoTentar={() => void todos.recarregar()} /> : (
         <>
           <div className="mb-5 grid grid-cols-2 gap-3 lg:grid-cols-4">
             <Indicador rotulo="Perguntas" valor={r.total} detalhe={`${r.comModelo} usaram o modelo`} />

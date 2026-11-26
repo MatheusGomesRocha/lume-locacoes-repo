@@ -85,6 +85,8 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
     if (agenteAntes) contexto.agente = agenteAntes
     const faqExtra = await api.faq.paraAssistente().catch(() => [])
     if (faqExtra.length) contexto.faqExtra = faqExtra
+    const catalogo = await api.evolucao.paraAssistente().catch(() => [])
+    if (catalogo.length) contexto.catalogo = catalogo
     setTexto('')
     setSugestoes([])
     setMensagens((m) => [...m, { id: proximoId.current++, autor: 'usuario', texto: limpa }])

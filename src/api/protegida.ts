@@ -33,6 +33,12 @@ export const PERMISSOES_DA_API: Record<string, string[]> = {
   'faq.atualizar': [PERMISSAO_SO_MASTER],
   'faq.excluir': [PERMISSAO_SO_MASTER],
   'faq.paraAssistente': ['assistente.usar'],
+  'evolucao.catalogo': ['assistente.usar'],
+  'evolucao.paraAssistente': ['assistente.usar'],
+  'evolucao.listar': [PERMISSAO_SO_MASTER],
+  'evolucao.analisar': [PERMISSAO_SO_MASTER],
+  'evolucao.decidir': [PERMISSAO_SO_MASTER],
+  'evolucao.desativar': [PERMISSAO_SO_MASTER],
   'chatLogs.registrar': ['assistente.usar'],
   'chatLogs.atualizar': ['assistente.usar'],
   'chatLogs.listar': ['assistente.conversas'],
@@ -65,5 +71,6 @@ export function protegerApi(api: Api, permissoes: () => Promise<string[] | null>
     pagamentos: envolver(api.pagamentos, 'pagamentos'),
     chatLogs: envolver(api.chatLogs, 'chatLogs'),
     faq: envolver(api.faq, 'faq'),
+    evolucao: envolver(api.evolucao, 'evolucao'),
   }
 }

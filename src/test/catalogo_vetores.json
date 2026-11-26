@@ -1,0 +1,72 @@
+{
+  "comentario": "Casos que o executor Python (ia-api/evolucao/consulta.py) e o TypeScript (frontend lib/catalogo.ts) precisam responder IGUAL.",
+  "dados": {
+    "clientes": [
+      {"nome": "Maria Souza", "tipo": "PF", "cidade": "Fortaleza", "observacoes": null},
+      {"nome": "Mariana Lima", "tipo": "PF", "cidade": "Sobral", "observacoes": "vip"},
+      {"nome": "Eventos Ágil", "tipo": "PJ", "cidade": "Fortaleza", "observacoes": null}
+    ],
+    "orcamentos": [
+      {"numero": "ORC-1", "cliente_nome": "Maria Souza", "evento": "Casamento", "status": "aprovado", "data_retirada": "2026-12-10", "data_devolucao": "2026-12-12", "diarias": 2, "desconto": 0, "total": 1000},
+      {"numero": "ORC-2", "cliente_nome": "Eventos Ágil", "evento": "Feira", "status": "rascunho", "data_retirada": "2026-11-01", "data_devolucao": "2026-11-03", "diarias": 2, "desconto": 50, "total": 450.5},
+      {"numero": "ORC-3", "cliente_nome": "Mariana Lima", "evento": "Aniversário", "status": "aprovado", "data_retirada": "2026-12-20", "data_devolucao": "2026-12-21", "diarias": 1, "desconto": 0, "total": 300}
+    ],
+    "usuarios": [
+      {"nome": "Ana", "papel": "master", "grupo_nome": "Master", "ativo": true},
+      {"nome": "Beto", "papel": "admin", "grupo_nome": "Gestão", "ativo": true},
+      {"nome": "Cris", "papel": "usuario", "grupo_nome": "Vendas", "ativo": false}
+    ]
+  },
+  "sessoes": {
+    "master": {"papel": "master", "permissoes": ["clientes.ver", "orcamentos.ver", "usuarios.ver"]},
+    "vendas": {"papel": "usuario", "permissoes": ["clientes.ver", "orcamentos.ver"]},
+    "sem_nada": {"papel": "usuario", "permissoes": []}
+  },
+  "casos": [
+    {"nome": "contar clientes por cidade", "sessao": "vendas", "params": {"cidade": "fortaleza"},
+     "spec": {"entidade": "clientes", "operacao": "contar", "permissao": "clientes.ver", "parametros": {"cidade": {"tipo": "texto", "obrigatorio": true}}, "filtros": [{"campo": "cidade", "op": "igual", "parametro": "cidade"}]},
+     "esperado": {"total": 2}},
+    {"nome": "palavra inteira: maria não acha mariana", "sessao": "vendas", "params": {"nome": "maria"},
+     "spec": {"entidade": "clientes", "operacao": "listar", "permissao": "clientes.ver", "saida": ["nome"], "limite": 10, "parametros": {"nome": {"tipo": "texto", "obrigatorio": true}}, "filtros": [{"campo": "nome", "op": "contem", "parametro": "nome"}]},
+     "esperado": {"total": 1, "linhas": [{"nome": "Maria Souza"}]}},
+    {"nome": "somar totais aprovados", "sessao": "vendas", "params": {},
+     "spec": {"entidade": "orcamentos", "operacao": "somar", "campo_soma": "total", "permissao": "orcamentos.ver", "filtros": [{"campo": "status", "op": "igual", "valor": "aprovado"}]},
+     "esperado": {"total": 2, "soma": 1300}},
+    {"nome": "somar com centavos", "sessao": "vendas", "params": {},
+     "spec": {"entidade": "orcamentos", "operacao": "somar", "campo_soma": "total", "permissao": "orcamentos.ver"},
+     "esperado": {"total": 3, "soma": 1750.5}},
+    {"nome": "listar ordenado por data e limitado", "sessao": "vendas", "params": {},
+     "spec": {"entidade": "orcamentos", "operacao": "listar", "permissao": "orcamentos.ver", "saida": ["numero", "data_retirada", "data_devolucao"], "ordenar_por": "data_retirada", "limite": 2},
+     "esperado": {"total": 3, "linhas": [{"numero": "ORC-2", "data_retirada": "2026-11-01", "data_devolucao": "2026-11-03"}, {"numero": "ORC-1", "data_retirada": "2026-12-10", "data_devolucao": "2026-12-12"}]}},
+    {"nome": "filtro de período por data", "sessao": "vendas", "params": {"de": "2026-12-01"},
+     "spec": {"entidade": "orcamentos", "operacao": "contar", "permissao": "orcamentos.ver", "parametros": {"de": {"tipo": "data"}}, "filtros": [{"campo": "data_retirada", "op": "maior_igual", "parametro": "de"}]},
+     "esperado": {"total": 2}},
+    {"nome": "filtro opcional sem valor não filtra", "sessao": "vendas", "params": {},
+     "spec": {"entidade": "orcamentos", "operacao": "contar", "permissao": "orcamentos.ver", "parametros": {"de": {"tipo": "data"}}, "filtros": [{"campo": "data_retirada", "op": "maior_igual", "parametro": "de"}]},
+     "esperado": {"total": 3}},
+    {"nome": "usuários por perfil (master)", "sessao": "master", "params": {"papel": "admin"},
+     "spec": {"entidade": "usuarios", "operacao": "contar", "permissao": "usuarios.ver", "papel_minimo": "admin", "parametros": {"papel": {"tipo": "enum", "valores": ["master", "admin", "usuario"], "obrigatorio": true}}, "filtros": [{"campo": "papel", "op": "igual", "parametro": "papel"}]},
+     "esperado": {"total": 1}},
+    {"nome": "bool: só ativos", "sessao": "master", "params": {},
+     "spec": {"entidade": "usuarios", "operacao": "contar", "permissao": "usuarios.ver", "filtros": [{"campo": "ativo", "op": "igual", "valor": true}]},
+     "esperado": {"total": 2}},
+    {"nome": "sem a permissão da tela", "sessao": "sem_nada", "params": {},
+     "spec": {"entidade": "clientes", "operacao": "contar", "permissao": "clientes.ver"},
+     "erro": "permissao"},
+    {"nome": "usuários exigem master ou admin", "sessao": "vendas", "params": {},
+     "spec": {"entidade": "usuarios", "operacao": "contar", "permissao": "clientes.ver"},
+     "erro": "permissao"},
+    {"nome": "parâmetro obrigatório ausente", "sessao": "vendas", "params": {},
+     "spec": {"entidade": "clientes", "operacao": "contar", "permissao": "clientes.ver", "parametros": {"cidade": {"tipo": "texto", "obrigatorio": true}}},
+     "erro": "parametro"},
+    {"nome": "parâmetro desconhecido", "sessao": "vendas", "params": {"x": "1"},
+     "spec": {"entidade": "clientes", "operacao": "contar", "permissao": "clientes.ver"},
+     "erro": "parametro"},
+    {"nome": "enum fora da lista", "sessao": "master", "params": {"papel": "root"},
+     "spec": {"entidade": "usuarios", "operacao": "contar", "permissao": "usuarios.ver", "parametros": {"papel": {"tipo": "enum", "valores": ["master", "admin", "usuario"], "obrigatorio": true}}, "filtros": [{"campo": "papel", "op": "igual", "parametro": "papel"}]},
+     "erro": "parametro"},
+    {"nome": "data inválida", "sessao": "vendas", "params": {"de": "2026-02-31"},
+     "spec": {"entidade": "orcamentos", "operacao": "contar", "permissao": "orcamentos.ver", "parametros": {"de": {"tipo": "data"}}, "filtros": [{"campo": "data_retirada", "op": "maior_igual", "parametro": "de"}]},
+     "erro": "parametro"}
+  ]
+}

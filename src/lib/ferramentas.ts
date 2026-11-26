@@ -6,6 +6,7 @@
  *  - cadastros: só preparam os valores do formulário; quem grava é o formulário, depois do usuário conferir;
  *  - exclusões: só localizam o registro; quem exclui é o botão de confirmação do cartão.
  */
+import { executarCatalogo } from './catalogo'
 import type { Api } from '../api/tipos'
 import type { Chamada, Cliente, Orcamento, Produto } from '../types'
 import type { ClienteForm, ProdutoForm } from '../types'
@@ -25,6 +26,7 @@ const soma = (valores: number[]) => Math.round(valores.reduce((s, v) => s + Math
 // Consultas
 // ---------------------------------------------------------------------------
 export async function executarConsulta(api: Api, chamada: Chamada): Promise<unknown> {
+  if (chamada.nome === 'catalogo') return executarCatalogo(api, chamada) // consulta criada pelos Agents e aprovada pelo master
   const a = chamada.args
   switch (chamada.nome) {
     case 'resumo_painel': {

@@ -6,7 +6,8 @@ import seedPadrao from '../data/seed.json'
 import { hojeISO } from '../lib/format'
 import { calcularFaltas, calcularTotal, diarias, podeAprovar, podeCancelar, podeEditar, podeEnviar, podeExcluir, podeFinalizar, proximoNumero } from '../lib/regras'
 import { MODULOS_FAQ, STATUS_ORCAMENTO } from '../types'
-import type { ChatLog, Cliente, FaqForm, FaqItem, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, Resumo, StatusOrcamento } from '../types'
+import type { ChatLog, Cliente, FaqForm, FaqItem, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, RelatorioEvolucao, Resumo, StatusOrcamento } from '../types'
+import { ativas, chamarIa, perguntasParaAnalisar, proximoNumeroEvolucao } from '../lib/evolucao'
 import { criarAcessoLocal } from './acesso'
 import { protegerApi } from './protegida'
 import { ApiError, type Api, type FiltroPagamento } from './tipos'
@@ -46,6 +47,7 @@ interface Banco {
   /** Ausente em dados salvos por versões antigas. */
   chat_logs?: ChatLog[]
   faq_itens?: FaqItem[]
+  evolucao?: RelatorioEvolucao[]
 }
 
 export interface Seed {
@@ -106,18 +108,21 @@ export interface OpcoesLocal {
   protegida?: boolean
   /** E-mail já logado ao criar (testes). */
   sessaoInicial?: string
+  /** Endereço da API de IA: a demonstração chama os Agents direto dele (a versão real passa pelo Laravel). */
+  iaUrl?: string
+  buscar?: typeof fetch
 }
 
-export function criarApiLocal({ storage = localStorage, agora = () => new Date(), seed = seedPadrao as unknown as Seed, protegida = true, sessaoInicial }: OpcoesLocal = {}): Api {
+export function criarApiLocal({ storage = localStorage, agora = () => new Date(), seed = seedPadrao as unknown as Seed, protegida = true, sessaoInicial, iaUrl = '', buscar = (...a) => fetch(...a) }: OpcoesLocal = {}): Api {
   const acesso = criarAcessoLocal({ storage, sessaoInicial })
-  const base = criarApiDeDados({ storage, agora, seed })
+  const base = criarApiDeDados({ storage, agora, seed, ia: { url: iaUrl, buscar }, quem: () => acesso.auth.salva()?.usuario.nome ?? 'master' })
   const completa: Api = { ...base, auth: acesso.auth, usuarios: acesso.usuarios, grupos: acesso.grupos }
   return protegida ? protegerApi(completa, acesso.permissoesAtuais) : completa
 }
 
 type ApiDeDados = Omit<Api, 'auth' | 'usuarios' | 'grupos'>
 
-function criarApiDeDados({ storage, agora, seed }: { storage: NonNullable<OpcoesLocal['storage']>; agora: () => Date; seed: Seed }): ApiDeDados {
+function criarApiDeDados({ storage, agora, seed, ia, quem }: { storage: NonNullable<OpcoesLocal['storage']>; agora: () => Date; seed: Seed; ia: { url: string; buscar: typeof fetch }; quem: () => string }): ApiDeDados {
   function ler(): Banco {
     const bruto = storage.getItem(CHAVE_STORAGE)
     if (bruto) {
@@ -278,6 +283,61 @@ function criarApiDeDados({ storage, agora, seed }: { storage: NonNullable<Opcoes
       },
       async paraAssistente() {
         return clonar(ler().faq_itens ?? [])
+      },
+    },
+    evolucao: {
+      async catalogo() {
+        return clonar(ativas(ler().evolucao ?? []))
+      },
+      async paraAssistente() {
+        return clonar(ativas(ler().evolucao ?? []))
+      },
+      async listar() {
+        return clonar([...(ler().evolucao ?? [])].sort((x, y) => y.id.localeCompare(x.id)))
+      },
+      async analisar() {
+        const b = ler()
+        const existentes = b.evolucao ?? []
+        const perguntas = perguntasParaAnalisar(b.chat_logs ?? [], b.faq_itens ?? [], existentes)
+        if (!perguntas.length) return { novos: [], semPerguntas: true }
+        const r = await chamarIa<{ relatorios: Omit<RelatorioEvolucao, 'ativa' | 'criado_em'>[] }>(ia.buscar, ia.url, '/evolucao/propor', {
+          perguntas, catalogo: ativas(existentes), proximo_numero: proximoNumeroEvolucao(existentes),
+        })
+        const novos: RelatorioEvolucao[] = r.relatorios.map((x) => ({ ...x, ativa: false, criado_em: agora().toISOString() }))
+        const depois = ler() // relê: a chamada demora e o banco pode ter mudado
+        depois.evolucao = [...(depois.evolucao ?? []), ...novos]
+        gravar(depois)
+        return { novos: clonar(novos), semPerguntas: false }
+      },
+      async decidir(id, aprovar) {
+        const b = ler()
+        const rel = (b.evolucao ?? []).find((x) => x.id === id)
+        if (!rel) throw new ApiError('Proposta não encontrada.', 404)
+        if (rel.status !== 'pendente') throw new ApiError(`Esta proposta já foi decidida (${rel.status}).`, 422)
+        if (aprovar) {
+          if (!rel.pacote) throw new ApiError('Não há consulta para aprovar: este item é só registro.', 422)
+          if (rel.veredito === 'reprovar_recomendado') throw new ApiError('O Tester encontrou bloqueios ou testes que falharam: reprove esta proposta.', 422)
+          // refaz as checagens fixas agora: o que está guardado no navegador pode ter sido mexido
+          const c = await chamarIa<{ bloqueio: boolean; achados: { gravidade: string; mensagem: string }[] }>(ia.buscar, ia.url, '/evolucao/checar', {
+            spec: rel.pacote.spec, proposta: rel.proposta ?? {}, catalogo: ativas(b.evolucao ?? []),
+          })
+          if (c.bloqueio) throw new ApiError('As checagens fixas, refeitas agora, encontraram bloqueios: ' + c.achados.filter((a) => a.gravidade === 'bloqueio').map((a) => a.mensagem).join('; '), 422)
+        }
+        const atual = ler()
+        const alvo = (atual.evolucao ?? []).find((x) => x.id === id)!
+        alvo.status = aprovar ? 'aprovada' : 'reprovada'
+        alvo.ativa = aprovar
+        alvo.decisao = { por: quem(), em: agora().toISOString() }
+        gravar(atual)
+        return clonar(alvo)
+      },
+      async desativar(id) {
+        const b = ler()
+        const rel = (b.evolucao ?? []).find((x) => x.id === id && x.status === 'aprovada' && x.ativa)
+        if (!rel) throw new ApiError('Não há consulta ativa com este código.', 404)
+        rel.ativa = false
+        gravar(b)
+        return clonar(rel)
       },
     },
     chatLogs: {

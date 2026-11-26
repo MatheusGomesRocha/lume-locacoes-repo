@@ -1,4 +1,5 @@
 import type { Chamada, RespostaChat } from '../types'
+import type { SpecConsulta } from './catalogo'
 import { hojeISO } from './format'
 
 /**
@@ -26,6 +27,8 @@ export interface ContextoChat {
   /** Estado da conversa do agente (criar orçamento/cliente falando). Volta como veio na resposta anterior. */
   agente?: Record<string, unknown> | null
   /** Respostas que o master escreveu (só na demonstração: na versão real o Laravel anexa). */
+  /** Consultas aprovadas pelo master (só na demonstração: na versão real o Laravel anexa). */
+  catalogo?: SpecConsulta[]
   faqExtra?: { id: number; modulo: string; pergunta: string; resposta: string; palavras_chave: string[] }[]
 }
 
@@ -96,6 +99,8 @@ export function criarClienteChat(
       if (config.tipo === 'direto' && contexto?.faqExtra?.length) {
         corpo.faq_extra = contexto.faqExtra.map(({ id, modulo, pergunta, resposta, palavras_chave }) => ({ id, modulo, pergunta, resposta, palavras_chave }))
       }
+
+      if (config.tipo === 'direto' && contexto?.catalogo?.length) corpo.catalogo = contexto.catalogo
 
       async function enviar(c: Record<string, unknown>): Promise<RespostaChat> {
         try {
