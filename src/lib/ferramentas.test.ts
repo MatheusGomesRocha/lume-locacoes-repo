@@ -51,6 +51,15 @@ describe('consultas (só leitura, poucos campos)', () => {
     expect(r.total).toBe(todas.filter((p) => p.vencimento === alvo).length)
   })
 
+  it('a contagem da Lumi não depende da paginação das telas', async () => {
+    const api = nova()
+    const todos = await api.produtos.listar()
+    expect(todos.length).toBeGreaterThan(10) // mais que uma página de 10
+    const r = (await executarConsulta(api, { nome: 'consultar_produtos', args: {} })) as { total: number }
+    expect(r.total).toBe(todos.length)
+    expect((await api.produtos.pagina(undefined, { pagina: 1, porPagina: 10 })).total).toBe(todos.length)
+  })
+
   it('clientes saem sem documento, e-mail, telefone ou observações', async () => {
     const r = (await executarConsulta(nova(), { nome: 'consultar_clientes', args: { busca: 'Fortaleza' } })) as { total: number; linhas: Record<string, unknown>[] }
     expect(r.total).toBeGreaterThan(0)

@@ -4,7 +4,8 @@ import { Botao, Cabecalho, CaixaErro, Carregando, Selo, Vazio } from '../compone
 import { dataBR, moeda, rotuloStatus } from '../lib/format'
 import { useApi } from '../lib/servicos'
 import { useSessao } from '../lib/sessao'
-import { useCarregar } from '../lib/useCarregar'
+import { usePaginado } from '../lib/usePaginado'
+import { Paginacao } from '../components/Paginacao'
 import { STATUS_ORCAMENTO, type StatusOrcamento } from '../types'
 
 export default function Orcamentos() {
@@ -13,7 +14,7 @@ export default function Orcamentos() {
   const [params, setParams] = useSearchParams()
   const status = (params.get('status') ?? '') as StatusOrcamento | ''
   const busca = params.get('q') ?? ''
-  const { dados, erro, carregando, recarregar } = useCarregar(() => api.orcamentos.listar({ busca, status }), [api, busca, status])
+  const { dados, erro, carregando, recarregar, controle } = usePaginado((pg) => api.orcamentos.pagina({ busca, status }, pg), [api, busca, status])
 
   const atualizar = (chave: string, valor: string) => {
     const novo = new URLSearchParams(params)
@@ -60,6 +61,7 @@ export default function Orcamentos() {
               </tbody>
             </table>
           )}
+          <Paginacao {...controle} />
         </div>
       )}
     </>

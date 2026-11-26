@@ -4,7 +4,8 @@ import { errosDeCampos, mensagemDeErro } from '../components/Formulario'
 import { Botao, Cabecalho, Campo, CaixaErro, Carregando, Confirmar, Modal, Vazio, useAviso } from '../components/ui'
 import { MODULOS, chave } from '../lib/permissoes'
 import { useApi } from '../lib/servicos'
-import { useCarregar } from '../lib/useCarregar'
+import { usePaginado } from '../lib/usePaginado'
+import { Paginacao } from '../components/Paginacao'
 import type { Grupo } from '../types'
 
 function FormGrupo({ registro, aoSalvo, aoCancelar }: { registro: Grupo | null; aoSalvo: () => void; aoCancelar: () => void }) {
@@ -76,7 +77,7 @@ function FormGrupo({ registro, aoSalvo, aoCancelar }: { registro: Grupo | null; 
 export default function Grupos() {
   const api = useApi()
   const avisar = useAviso()
-  const { dados, erro, carregando, recarregar } = useCarregar(() => api.grupos.listar(), [api])
+  const { dados, erro, carregando, recarregar, controle } = usePaginado((pg) => api.grupos.pagina(pg), [api])
   const [editando, setEditando] = useState<Grupo | 'novo' | null>(null)
   const [excluindo, setExcluindo] = useState<Grupo | null>(null)
 
@@ -116,6 +117,7 @@ export default function Grupos() {
               ))}
             </ul>
           )}
+          <Paginacao {...controle} />
         </div>
       )}
       <Modal aberto={editando !== null} titulo={editando === 'novo' ? 'Novo grupo' : 'Editar grupo'} aoFechar={() => setEditando(null)} largo>

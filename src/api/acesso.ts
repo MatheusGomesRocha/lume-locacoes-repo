@@ -5,7 +5,7 @@
  */
 import { MENSAGEM_SEM_PERMISSAO, MENSAGEM_SEM_SESSAO, PERMISSAO_SO_MASTER, TODAS_PERMISSOES, ehAdmin, limparPermissoes, podeGerenciar } from '../lib/permissoes'
 import type { Grupo, GrupoForm, MinhaContaForm, Papel, Sessao, Usuario, UsuarioForm } from '../types'
-import { ApiError, type Api } from './tipos'
+import { ApiError, type Api, type SemPagina } from './tipos'
 
 export const CHAVE_ACESSO = 'lume:acesso:v1'
 export const CHAVE_SESSAO = 'lume:sessao:v1'
@@ -69,7 +69,7 @@ export interface OpcoesAcesso {
   sessaoInicial?: string
 }
 
-export type ParteAcesso = Pick<Api, 'auth' | 'usuarios' | 'grupos'> & {
+export type ParteAcesso = SemPagina<Pick<Api, 'auth' | 'usuarios' | 'grupos'>> & {
   /** Permissões de quem está logado agora (vazio se ninguém). Usado pelo protetor de API. */
   permissoesAtuais(): Promise<string[] | null>
 }

@@ -137,6 +137,16 @@ export type TipoLog = 'ajuda' | 'consulta' | 'cadastro' | 'exclusao' | 'nao_enco
 export const TIPOS_LOG: TipoLog[] = ['ajuda', 'consulta', 'cadastro', 'exclusao', 'nao_encontrou', 'erro']
 
 /** Uma pergunta feita ao assistente e como ela foi respondida (observabilidade). Não guarda os dados que a consulta leu. */
+/** Uma página de uma lista, com o total de itens (o total vem do servidor, não do tamanho da página). */
+export interface Pagina<T> {
+  dados: T[]
+  total: number
+  pagina: number
+  por_pagina: number
+  ultima_pagina: number
+}
+export interface PedidoPagina { pagina: number; porPagina: number }
+
 export interface ChatLog {
   id: number
   criado_em: string

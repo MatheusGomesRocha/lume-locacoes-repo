@@ -7,6 +7,8 @@ import { moeda } from '../lib/format'
 import { useApi } from '../lib/servicos'
 import { useSessao } from '../lib/sessao'
 import { useCarregar } from '../lib/useCarregar'
+import { usePaginado } from '../lib/usePaginado'
+import { Paginacao } from '../components/Paginacao'
 import type { Produto } from '../types'
 
 export default function Produtos() {
@@ -16,7 +18,7 @@ export default function Produtos() {
   const [busca, setBusca] = useState('')
   const [categoria, setCategoria] = useState('')
   const todos = useCarregar(() => api.produtos.listar(), [api])
-  const { dados, erro, carregando, recarregar } = useCarregar(() => api.produtos.listar({ busca, categoria }), [api, busca, categoria])
+  const { dados, erro, carregando, recarregar, controle } = usePaginado((pg) => api.produtos.pagina({ busca, categoria }, pg), [api, busca, categoria])
   const [editando, setEditando] = useState<Produto | 'novo' | null>(null)
   const [excluindo, setExcluindo] = useState<Produto | null>(null)
 
@@ -84,6 +86,7 @@ export default function Produtos() {
               </tbody>
             </table>
           )}
+          <Paginacao {...controle} />
         </div>
       )}
 

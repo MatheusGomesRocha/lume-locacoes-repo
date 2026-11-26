@@ -7,6 +7,8 @@ import { podeGerenciar } from '../lib/permissoes'
 import { useApi } from '../lib/servicos'
 import { useSessao } from '../lib/sessao'
 import { useCarregar } from '../lib/useCarregar'
+import { usePaginado } from '../lib/usePaginado'
+import { Paginacao } from '../components/Paginacao'
 import { ROTULO_PAPEL, type Grupo, type Papel, type Usuario, type UsuarioForm } from '../types'
 
 const VAZIO: UsuarioForm = { nome: '', email: '', papel: 'usuario', grupo_id: 0, ativo: true, senha: '' }
@@ -84,7 +86,7 @@ export default function Usuarios() {
   const avisar = useAviso()
   const { sessao, pode } = useSessao()
   const eu = sessao!.usuario
-  const lista = useCarregar(() => api.usuarios.listar(), [api])
+  const lista = usePaginado((pg) => api.usuarios.pagina(pg), [api])
   const grupos = useCarregar(() => api.grupos.listar(), [api])
   const [editando, setEditando] = useState<Usuario | 'novo' | null>(null)
   const [excluindo, setExcluindo] = useState<Usuario | null>(null)
@@ -131,6 +133,7 @@ export default function Usuarios() {
               </tbody>
             </table>
           )}
+          <Paginacao {...lista.controle} />
         </div>
       )}
       <Modal aberto={editando !== null} titulo={editando === 'novo' ? 'Novo usuário' : 'Editar usuário'} aoFechar={() => setEditando(null)}>

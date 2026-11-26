@@ -7,6 +7,8 @@ import { dataBR, hojeISO, moeda, rotuloForma } from '../lib/format'
 import { useApi } from '../lib/servicos'
 import { useSessao } from '../lib/sessao'
 import { useCarregar } from '../lib/useCarregar'
+import { usePaginado } from '../lib/usePaginado'
+import { Paginacao } from '../components/Paginacao'
 import { FORMAS, type FormaPagamento, type Pagamento } from '../types'
 
 const filtros: [FiltroPagamento, string][] = [['todos', 'Todas'], ['pendente', 'A receber'], ['atrasado', 'Em atraso'], ['pago', 'Pagas'], ['cancelado', 'Canceladas']]
@@ -16,7 +18,8 @@ export default function Financeiro() {
   const avisar = useAviso()
   const { pode } = useSessao()
   const [filtro, setFiltro] = useState<FiltroPagamento>('todos')
-  const { dados, erro, carregando, recarregar } = useCarregar(() => api.pagamentos.listar(filtro), [api, filtro])
+  const { dados, erro, carregando, recarregar, controle } = usePaginado((pg) => api.pagamentos.pagina(filtro, pg), [api, filtro])
+  const inteira = useCarregar(() => api.pagamentos.listar(filtro), [api, filtro]) // o total do topo soma a lista toda, não só a página
   const [baixando, setBaixando] = useState<Pagamento | null>(null)
   const [data, setData] = useState(hojeISO())
   const [forma, setForma] = useState<FormaPagamento>('pix')
@@ -25,7 +28,7 @@ export default function Financeiro() {
 
   const hoje = hojeISO()
   const situacao = (p: Pagamento) => (p.status === 'pendente' && p.vencimento < hoje ? 'atrasado' : p.status)
-  const totalLista = (dados ?? []).filter((p) => p.status !== 'cancelado').reduce((s, p) => s + p.valor, 0)
+  const totalLista = (inteira.dados ?? []).filter((p) => p.status !== 'cancelado').reduce((s, p) => s + p.valor, 0)
 
   function abrir(p: Pagamento) {
     setErros({}); setData(hojeISO()); setForma('pix'); setBaixando(p)
@@ -40,7 +43,7 @@ export default function Financeiro() {
       await api.pagamentos.baixar(baixando.id, data, forma)
       avisar('Pagamento registrado.')
       setBaixando(null)
-      await recarregar()
+      await Promise.all([recarregar(), inteira.recarregar()])
     } catch (err) {
       const campos = errosDeCampos(err)
       setErros(campos)
@@ -78,7 +81,8 @@ export default function Financeiro() {
                   ))}
                 </tbody>
               </table>
-              <p className="border-t border-gelo-200 bg-gelo-50 px-5 py-3 text-right text-sm text-tinta-soft">{dados!.length} {dados!.length === 1 ? 'cobrança' : 'cobranças'} · <span className="font-semibold tabular-nums text-noite-900">{moeda(totalLista)}</span> (sem canceladas)</p>
+              <p className="border-t border-gelo-200 bg-gelo-50 px-5 py-3 text-right text-sm text-tinta-soft">{controle.total} {controle.total === 1 ? 'cobrança' : 'cobranças'} · <span className="font-semibold tabular-nums text-noite-900">{moeda(totalLista)}</span> (sem canceladas)</p>
+              <Paginacao {...controle} />
             </>
           )}
         </div>

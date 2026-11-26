@@ -5,7 +5,8 @@ import { FormCliente } from '../components/formularios/FormCliente'
 import { Botao, Cabecalho, CaixaErro, Carregando, Confirmar, Modal, Vazio, useAviso } from '../components/ui'
 import { useApi } from '../lib/servicos'
 import { useSessao } from '../lib/sessao'
-import { useCarregar } from '../lib/useCarregar'
+import { usePaginado } from '../lib/usePaginado'
+import { Paginacao } from '../components/Paginacao'
 import type { Cliente } from '../types'
 
 export default function Clientes() {
@@ -13,7 +14,7 @@ export default function Clientes() {
   const avisar = useAviso()
   const { pode } = useSessao()
   const [busca, setBusca] = useState('')
-  const { dados, erro, carregando, recarregar } = useCarregar(() => api.clientes.listar(busca), [api, busca])
+  const { dados, erro, carregando, recarregar, controle } = usePaginado((pg) => api.clientes.pagina(busca, pg), [api, busca])
   const [editando, setEditando] = useState<Cliente | 'novo' | null>(null)
   const [excluindo, setExcluindo] = useState<Cliente | null>(null)
 
@@ -72,6 +73,7 @@ export default function Clientes() {
               </tbody>
             </table>
           )}
+          <Paginacao {...controle} />
         </div>
       )}
 

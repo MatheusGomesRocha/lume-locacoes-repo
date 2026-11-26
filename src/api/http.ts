@@ -1,5 +1,5 @@
 import { ApiError, type Api } from './tipos'
-import type { Sessao } from '../types'
+import type { PedidoPagina, Sessao } from '../types'
 
 export const CHAVE_TOKEN = 'lume:token:v1'
 export const CHAVE_SESSAO_HTTP = 'lume:sessao-http:v1'
@@ -37,12 +37,13 @@ export function criarApiHttp(baseUrl: string, buscar: typeof fetch = (...a) => f
     return json as T
   }
 
-  const qs = (params: Record<string, string | boolean | undefined>) => {
+  const qs = (params: Record<string, string | number | boolean | undefined>) => {
     const p = new URLSearchParams()
     Object.entries(params).forEach(([k, v]) => v !== undefined && v !== '' && p.set(k, String(v)))
     const s = p.toString()
     return s ? `?${s}` : ''
   }
+  const pg = (p: PedidoPagina) => ({ pagina: p.pagina, por_pagina: p.porPagina })
 
   return {
     modo: 'http',
@@ -74,12 +75,14 @@ export function criarApiHttp(baseUrl: string, buscar: typeof fetch = (...a) => f
     },
     usuarios: {
       listar: () => chamar('GET', '/usuarios'),
+      pagina: (p) => chamar('GET', '/usuarios' + qs(pg(p))),
       criar: (d) => chamar('POST', '/usuarios', d),
       atualizar: (id, d) => chamar('PUT', `/usuarios/${id}`, d),
       excluir: (id) => chamar('DELETE', `/usuarios/${id}`),
     },
     grupos: {
       listar: () => chamar('GET', '/grupos'),
+      pagina: (p) => chamar('GET', '/grupos' + qs(pg(p))),
       criar: (d) => chamar('POST', '/grupos', d),
       atualizar: (id, d) => chamar('PUT', `/grupos/${id}`, d),
       excluir: (id) => chamar('DELETE', `/grupos/${id}`),
@@ -102,24 +105,28 @@ export function criarApiHttp(baseUrl: string, buscar: typeof fetch = (...a) => f
     },
     chatLogs: {
       listar: (f = {}) => chamar('GET', '/chat-logs' + qs({ tipo: f.tipo, feedback: f.feedback })),
+      pagina: (f = {}, p) => chamar('GET', '/chat-logs' + qs({ tipo: f.tipo, feedback: f.feedback, ...pg(p) })),
       registrar: (d) => chamar('POST', '/chat-logs', d),
       atualizar: (id, ajuste) => chamar('PATCH', `/chat-logs/${id}`, ajuste),
       limpar: () => chamar('DELETE', '/chat-logs'),
     },
     clientes: {
       listar: (busca) => chamar('GET', '/clientes' + qs({ q: busca })),
+      pagina: (busca, p) => chamar('GET', '/clientes' + qs({ q: busca, ...pg(p) })),
       criar: (d) => chamar('POST', '/clientes', d),
       atualizar: (id, d) => chamar('PUT', `/clientes/${id}`, d),
       excluir: (id) => chamar('DELETE', `/clientes/${id}`),
     },
     produtos: {
       listar: (f = {}) => chamar('GET', '/produtos' + qs({ q: f.busca, categoria: f.categoria, ativo: f.ativo })),
+      pagina: (f = {}, p) => chamar('GET', '/produtos' + qs({ q: f.busca, categoria: f.categoria, ativo: f.ativo, ...pg(p) })),
       criar: (d) => chamar('POST', '/produtos', d),
       atualizar: (id, d) => chamar('PUT', `/produtos/${id}`, d),
       excluir: (id) => chamar('DELETE', `/produtos/${id}`),
     },
     orcamentos: {
       listar: (f = {}) => chamar('GET', '/orcamentos' + qs({ q: f.busca, status: f.status })),
+      pagina: (f = {}, p) => chamar('GET', '/orcamentos' + qs({ q: f.busca, status: f.status, ...pg(p) })),
       obter: (id) => chamar('GET', `/orcamentos/${id}`),
       criar: (d) => chamar('POST', '/orcamentos', d),
       atualizar: (id, d) => chamar('PUT', `/orcamentos/${id}`, d),
@@ -131,6 +138,7 @@ export function criarApiHttp(baseUrl: string, buscar: typeof fetch = (...a) => f
     },
     pagamentos: {
       listar: (filtro = 'todos') => chamar('GET', '/pagamentos' + qs({ status: filtro === 'todos' ? undefined : filtro })),
+      pagina: (filtro = 'todos', p) => chamar('GET', '/pagamentos' + qs({ status: filtro === 'todos' ? undefined : filtro, ...pg(p) })),
       baixar: (id, pago_em, forma) => chamar('POST', `/pagamentos/${id}/baixar`, { pago_em, forma }),
     },
   }

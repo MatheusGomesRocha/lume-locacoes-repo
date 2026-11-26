@@ -10,14 +10,17 @@ const MONTA_ORCAMENTO = ['orcamentos.criar', 'orcamentos.editar']
 export const PERMISSOES_DA_API: Record<string, string[]> = {
   'dashboard': ['painel.ver'],
   'clientes.listar': ['clientes.ver', ...MONTA_ORCAMENTO],
+  'clientes.pagina': ['clientes.ver', ...MONTA_ORCAMENTO],
   'clientes.criar': ['clientes.criar'],
   'clientes.atualizar': ['clientes.editar'],
   'clientes.excluir': ['clientes.excluir'],
   'produtos.listar': ['produtos.ver', ...MONTA_ORCAMENTO],
+  'produtos.pagina': ['produtos.ver', ...MONTA_ORCAMENTO],
   'produtos.criar': ['produtos.criar'],
   'produtos.atualizar': ['produtos.editar'],
   'produtos.excluir': ['produtos.excluir'],
   'orcamentos.listar': ['orcamentos.ver', 'financeiro.ver'],
+  'orcamentos.pagina': ['orcamentos.ver', 'financeiro.ver'],
   'orcamentos.obter': ['orcamentos.ver'],
   'orcamentos.criar': ['orcamentos.criar'],
   'orcamentos.atualizar': ['orcamentos.editar'],
@@ -27,6 +30,7 @@ export const PERMISSOES_DA_API: Record<string, string[]> = {
   'orcamentos.finalizar': ['orcamentos.finalizar'],
   'orcamentos.cancelar': ['orcamentos.cancelar'],
   'pagamentos.listar': ['financeiro.ver'],
+  'pagamentos.pagina': ['financeiro.ver'],
   'pagamentos.baixar': ['financeiro.baixar'],
   'faq.listar': [PERMISSAO_SO_MASTER],
   'faq.criar': [PERMISSAO_SO_MASTER],
@@ -42,6 +46,7 @@ export const PERMISSOES_DA_API: Record<string, string[]> = {
   'chatLogs.registrar': ['assistente.usar'],
   'chatLogs.atualizar': ['assistente.usar'],
   'chatLogs.listar': ['assistente.conversas'],
+  'chatLogs.pagina': ['assistente.conversas'],
   'chatLogs.limpar': ['assistente.conversas'],
 }
 

@@ -42,6 +42,7 @@ describe('Clientes', () => {
     await userEvent.type(within(modal).getByLabelText('Nome'), 'Zélia Teste')
     await userEvent.click(within(modal).getByRole('button', { name: 'Salvar cliente' }))
     expect(await screen.findByText('Cliente cadastrado.')).toBeInTheDocument()
+    await userEvent.type(screen.getByLabelText('Buscar clientes'), 'Zélia') // ordem alfabética: o novo cliente cai na página 2
     expect(await screen.findByText('Zélia Teste')).toBeInTheDocument()
   })
   it('edita um cliente', async () => {
@@ -72,9 +73,10 @@ describe('Clientes', () => {
 describe('Produtos', () => {
   it('lista, filtra por categoria e cadastra com validação de código único', async () => {
     renderizar('/produtos')
-    expect(await screen.findByText('Refletor LED RGB 200W')).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: 'Produtos' })).toBeInTheDocument()
 
-    await userEvent.selectOptions(screen.getByLabelText('Filtrar por categoria'), 'Iluminação')
+    await userEvent.selectOptions(await screen.findByLabelText('Filtrar por categoria'), 'Iluminação')
+    expect(await screen.findByText('Refletor LED RGB 200W')).toBeInTheDocument()
     await waitFor(() => expect(screen.queryByText('Caixa de som ativa 15"')).toBeNull())
 
     await userEvent.click(screen.getByRole('button', { name: 'Novo produto' }))
@@ -348,5 +350,25 @@ describe('Acesso', () => {
     await entrar('master@lume.com')
     await userEvent.click(await screen.findByRole('button', { name: /Sair/ }))
     expect(await screen.findByRole('button', { name: 'Entrar' })).toBeInTheDocument()
+  })
+})
+
+describe('Paginação das listas', () => {
+  it('mostra 10 por página, anda entre páginas e deixa trocar o tamanho', async () => {
+    localStorage.clear()
+    renderizar('/produtos')
+    const nav = await screen.findByRole('navigation', { name: 'Paginação' })
+    const total = Number(/de (\d+)/.exec(nav.textContent ?? '')?.[1])
+    expect(total).toBeGreaterThan(10)
+    expect(nav).toHaveTextContent(`1–10 de ${total}`)
+    await waitFor(() => expect(screen.getAllByRole('row')).toHaveLength(11)) // cabeçalho + 10
+
+    await userEvent.click(screen.getByRole('button', { name: 'Próxima página' }))
+    expect(await screen.findByText(new RegExp(`11–${Math.min(20, total)} de ${total}`))).toBeInTheDocument()
+
+    await userEvent.selectOptions(screen.getByLabelText('Itens por página'), '100')
+    expect(await screen.findByText(new RegExp(`1–${total} de ${total}`))).toBeInTheDocument() // volta para a página 1
+    expect(localStorage.getItem('lume.por_pagina')).toBe('100')
+    localStorage.clear()
   })
 })

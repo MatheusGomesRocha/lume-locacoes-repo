@@ -2,6 +2,7 @@
  * Driver da versão de demonstração (GitHub Pages): tudo fica no localStorage do navegador.
  * Reproduz as regras do Laravel (mesmas mensagens, mesmos status HTTP) usando lib/regras.ts.
  */
+import { comPaginas } from '../lib/paginacao'
 import seedPadrao from '../data/seed.json'
 import { hojeISO } from '../lib/format'
 import { calcularFaltas, calcularTotal, diarias, podeAprovar, podeCancelar, podeEditar, podeEnviar, podeExcluir, podeFinalizar, proximoNumero } from '../lib/regras'
@@ -10,7 +11,7 @@ import type { ChatLog, Cliente, FaqForm, FaqItem, FormaPagamento, Orcamento, Orc
 import { ativas, chamarIa, perguntasParaAnalisar, proximoNumeroEvolucao } from '../lib/evolucao'
 import { criarAcessoLocal } from './acesso'
 import { protegerApi } from './protegida'
-import { ApiError, type Api, type FiltroPagamento } from './tipos'
+import { ApiError, type Api, type FiltroPagamento, type SemPagina } from './tipos'
 
 export const CHAVE_STORAGE = 'lume:v1'
 /** Quantos registros do assistente a demonstração guarda (os mais antigos saem). */
@@ -116,11 +117,11 @@ export interface OpcoesLocal {
 export function criarApiLocal({ storage = localStorage, agora = () => new Date(), seed = seedPadrao as unknown as Seed, protegida = true, sessaoInicial, iaUrl = '', buscar = (...a) => fetch(...a) }: OpcoesLocal = {}): Api {
   const acesso = criarAcessoLocal({ storage, sessaoInicial })
   const base = criarApiDeDados({ storage, agora, seed, ia: { url: iaUrl, buscar }, quem: () => acesso.auth.salva()?.usuario.nome ?? 'master' })
-  const completa: Api = { ...base, auth: acesso.auth, usuarios: acesso.usuarios, grupos: acesso.grupos }
+  const completa: Api = comPaginas({ ...base, auth: acesso.auth, usuarios: acesso.usuarios, grupos: acesso.grupos } as Api)
   return protegida ? protegerApi(completa, acesso.permissoesAtuais) : completa
 }
 
-type ApiDeDados = Omit<Api, 'auth' | 'usuarios' | 'grupos'>
+type ApiDeDados = SemPagina<Omit<Api, 'auth' | 'usuarios' | 'grupos'>>
 
 function criarApiDeDados({ storage, agora, seed, ia, quem }: { storage: NonNullable<OpcoesLocal['storage']>; agora: () => Date; seed: Seed; ia: { url: string; buscar: typeof fetch }; quem: () => string }): ApiDeDados {
   function ler(): Banco {

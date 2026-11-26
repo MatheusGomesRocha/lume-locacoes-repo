@@ -1,4 +1,6 @@
 import type {
+  Pagina,
+  PedidoPagina,
   ChatLog, ChatLogAjuste, ChatLogForm, FaqForm, FaqItem, RelatorioEvolucao, TipoLog,
   Grupo, GrupoForm, MinhaContaForm, Sessao, Usuario, UsuarioForm,
   Cliente, ClienteForm, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, ProdutoForm, Resumo, StatusOrcamento,
@@ -26,24 +28,30 @@ export type FiltroPagamento = 'todos' | 'pendente' | 'atrasado' | 'pago' | 'canc
  *  - http.ts  → conversa com o Laravel (versão real)
  *  - local.ts → guarda no localStorage do navegador (versão GitHub Pages)
  */
+/** A mesma API sem o `pagina` das listas: é o que a demo escreve à mão; o `pagina` entra por cima (lib/paginacao.ts). */
+export type SemPagina<T> = { [K in keyof T]: T[K] extends (...a: never[]) => unknown ? T[K] : Omit<T[K], 'pagina'> }
+
 export interface Api {
   modo: 'http' | 'local'
   dashboard(): Promise<Resumo>
 
   clientes: {
     listar(busca?: string): Promise<Cliente[]>
+    pagina(busca: string | undefined, pg: PedidoPagina): Promise<Pagina<Cliente>>
     criar(dados: ClienteForm): Promise<Cliente>
     atualizar(id: number, dados: ClienteForm): Promise<Cliente>
     excluir(id: number): Promise<void>
   }
   produtos: {
     listar(filtros?: { busca?: string; categoria?: string; ativo?: boolean }): Promise<Produto[]>
+    pagina(filtros: { busca?: string; categoria?: string; ativo?: boolean } | undefined, pg: PedidoPagina): Promise<Pagina<Produto>>
     criar(dados: ProdutoForm): Promise<Produto>
     atualizar(id: number, dados: ProdutoForm): Promise<Produto>
     excluir(id: number): Promise<void>
   }
   orcamentos: {
     listar(filtros?: { busca?: string; status?: StatusOrcamento | '' }): Promise<Orcamento[]>
+    pagina(filtros: { busca?: string; status?: StatusOrcamento | '' } | undefined, pg: PedidoPagina): Promise<Pagina<Orcamento>>
     obter(id: number): Promise<Orcamento>
     criar(dados: OrcamentoForm): Promise<Orcamento>
     atualizar(id: number, dados: OrcamentoForm): Promise<Orcamento>
@@ -55,6 +63,7 @@ export interface Api {
   }
   pagamentos: {
     listar(filtro?: FiltroPagamento): Promise<Pagamento[]>
+    pagina(filtro: FiltroPagamento | undefined, pg: PedidoPagina): Promise<Pagina<Pagamento>>
     baixar(id: number, pagoEm: string, forma: FormaPagamento): Promise<Pagamento>
   }
   /** Respostas do master para perguntas sem resposta (só o master mexe). */
@@ -92,12 +101,14 @@ export interface Api {
   }
   usuarios: {
     listar(): Promise<Usuario[]>
+    pagina(pg: PedidoPagina): Promise<Pagina<Usuario>>
     criar(dados: UsuarioForm): Promise<Usuario>
     atualizar(id: number, dados: UsuarioForm): Promise<Usuario>
     excluir(id: number): Promise<void>
   }
   grupos: {
     listar(): Promise<Grupo[]>
+    pagina(pg: PedidoPagina): Promise<Pagina<Grupo>>
     criar(dados: GrupoForm): Promise<Grupo>
     atualizar(id: number, dados: GrupoForm): Promise<Grupo>
     excluir(id: number): Promise<void>
@@ -105,6 +116,7 @@ export interface Api {
   /** Registro das conversas com o assistente. */
   chatLogs: {
     listar(filtros?: { tipo?: TipoLog; feedback?: 'positivo' | 'negativo' }): Promise<ChatLog[]>
+    pagina(filtros: { tipo?: TipoLog; feedback?: 'positivo' | 'negativo' } | undefined, pg: PedidoPagina): Promise<Pagina<ChatLog>>
     registrar(dados: ChatLogForm): Promise<ChatLog>
     atualizar(id: number, ajuste: ChatLogAjuste): Promise<ChatLog>
     limpar(): Promise<void>

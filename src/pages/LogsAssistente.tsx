@@ -9,6 +9,8 @@ import { PERMISSAO_SO_MASTER } from '../lib/permissoes'
 import { useApi } from '../lib/servicos'
 import { useSessao } from '../lib/sessao'
 import { useCarregar } from '../lib/useCarregar'
+import { usePaginaLocal } from '../lib/usePaginado'
+import { Paginacao } from '../components/Paginacao'
 import { MODULOS_FAQ, TIPOS_LOG, type FaqItem, type TipoLog } from '../types'
 
 const ms = (v: number | null) => (v === null ? '—' : v >= 1000 ? `${(v / 1000).toFixed(1).replace('.', ',')} s` : `${v} ms`)
@@ -90,7 +92,8 @@ export default function LogsAssistente() {
   const todos = useCarregar(() => api.chatLogs.listar(), [api])
   const faq = useCarregar(() => (master ? api.faq.listar() : Promise.resolve([] as FaqItem[])), [api, master])
   const pendentes = new Set(master ? pendentesDeResposta(todos.dados ?? [], faq.dados ?? []).map((l) => l.id) : [])
-  const lista = (todos.dados ?? []).filter((l) => (!tipo || l.tipo === tipo) && (!soRuins || l.feedback === 'negativo' || l.tipo === 'nao_encontrou' || l.tipo === 'erro'))
+  const filtrada = (todos.dados ?? []).filter((l) => (!tipo || l.tipo === tipo) && (!soRuins || l.feedback === 'negativo' || l.tipo === 'nao_encontrou' || l.tipo === 'erro'))
+  const { dados: lista, controle } = usePaginaLocal(filtrada, [tipo, soRuins])
   const r = resumirLogs(todos.dados ?? [])
 
   async function ignorar(id: number) {
@@ -199,6 +202,7 @@ export default function LogsAssistente() {
                 </tbody>
               </table>
             )}
+            <Paginacao {...controle} />
           </div>
 
           {master && (
