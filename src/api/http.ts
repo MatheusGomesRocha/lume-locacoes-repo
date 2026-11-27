@@ -102,6 +102,9 @@ export function criarApiHttp(baseUrl: string, buscar: typeof fetch = (...a) => f
       analisar: () => chamar('POST', '/evolucao/analisar'),
       decidir: (id, aprovar) => chamar('POST', `/evolucao/${id}/decidir`, { aprovar }),
       desativar: (id) => chamar('POST', `/evolucao/${id}/desativar`),
+      revisar: () => chamar('POST', '/evolucao/revisar'),
+      aprovador: () => chamar('GET', '/evolucao/aprovador'),
+      conferir: (id) => chamar('POST', `/evolucao/${id}/conferir`),
     },
     chatLogs: {
       listar: (f = {}) => chamar('GET', '/chat-logs' + qs({ tipo: f.tipo, feedback: f.feedback })),

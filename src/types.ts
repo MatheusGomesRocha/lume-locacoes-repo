@@ -238,6 +238,19 @@ export interface MinhaContaForm { nome: string; email: string; senha_atual?: str
 // ---------------------------------------------------------------------------
 export type VereditoEvolucao = 'aprovar_recomendado' | 'revisar_com_atencao' | 'reprovar_recomendado'
 export type StatusEvolucao = 'pendente' | 'aprovada' | 'reprovada'
+/** Parecer do Agent 4 (Aprovador): as 5 condições, o risco e o que o modelo achou. Quem decide continua sendo o master (modo sombra). */
+export interface RevisaoEvolucao {
+  decisao: 'aprovar' | 'deixar_pendente' | 'reprovar'
+  motivo: string
+  condicoes: { id: string; texto: string; ok: boolean; detalhe: string }[]
+  risco: { nivel: 'baixo' | 'alto'; motivos: string[] } | null
+  parecer_do_modelo: { decisao: string; motivo: string; itens: { item: string; ok: boolean; evidencia: string }[]; duvidas: string[]; riscos: string[] } | null
+  modo?: 'sombra' | 'automatico'
+  feita_em?: string | null
+}
+export interface ResumoDaExecucao { modo: 'desligado' | 'sombra' | 'automatico'; revisadas: number; aprovadas_automaticamente: number; erros: number; pendentes_sem_parecer: number; mensagem: string }
+export interface EstadoDoAprovador { modo: 'desligado' | 'sombra' | 'automatico'; aprovadas_hoje: number; limite_dia: number }
+
 export interface RelatorioEvolucao {
   id: string
   titulo: string
@@ -256,5 +269,12 @@ export interface RelatorioEvolucao {
   /** Consulta ativa no catálogo (só vale para aprovadas). */
   ativa: boolean
   decisao?: { por: string; em: string } | null
+  /** Parecer do Agent de Aprovação (Agent 4), quando já opinou. */
+  revisao?: RevisaoEvolucao | null
+  /** Aprovada pelo próprio Agent (modo automático). */
+  auto_aprovada?: boolean
+  /** Aprovação automática sorteada para você conferir. */
+  amostra?: boolean
+  conferida_por?: string | null
   criado_em: string
 }

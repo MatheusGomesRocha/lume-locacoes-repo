@@ -17,10 +17,14 @@ const falhaCom = async (p: Promise<unknown>, status: number) => {
   return e as ApiError
 }
 
-function montar(respostas: { propor?: object | number; checar?: object } = {}) {
+function montar(respostas: { propor?: object | number; checar?: object; revisar?: object | number } = {}) {
   const chamadas: { url: string; corpo: Record<string, unknown> }[] = []
   const buscar = (async (url: string, init: RequestInit) => {
     chamadas.push({ url, corpo: JSON.parse(String(init.body)) })
+    if (url.endsWith('/evolucao/revisar')) {
+      if (respostas.revisar === 500) return new Response(JSON.stringify({ detail: 'x' }), { status: 502 })
+      return new Response(JSON.stringify(respostas.revisar ?? { decisao: 'aprovar', motivo: 'ok', condicoes: [], risco: null, parecer_do_modelo: null }))
+    }
     if (url.endsWith('/evolucao/propor')) {
       if (typeof respostas.propor === 'number') return new Response(JSON.stringify({ detail: 'sem modelo' }), { status: respostas.propor })
       return new Response(JSON.stringify(respostas.propor ?? { relatorios: [relatorio()] }))
@@ -109,5 +113,29 @@ describe('evolução assistida (demonstração)', () => {
     const { api } = montar()
     await falhaCom(api.evolucao.listar(), 401)
     await falhaCom(api.evolucao.catalogo(), 401)
+  })
+
+  it('Agent de Aprovação (demo): só dá parecer, nunca decide, e não revisa duas vezes a mesma proposta', async () => {
+    const { api, chamadas } = await masterCom()
+    await api.chatLogs.registrar(log('quantos clientes tenho em Fortaleza?'))
+    await api.evolucao.analisar()
+    const r = await api.evolucao.revisar()
+    expect(r).toMatchObject({ modo: 'sombra', revisadas: 1, aprovadas_automaticamente: 0 })
+    const [p] = await api.evolucao.listar()
+    expect(p.revisao).toMatchObject({ decisao: 'aprovar', modo: 'sombra' })
+    expect(p.status).toBe('pendente')
+    expect(await api.evolucao.catalogo()).toEqual([])
+    expect(chamadas.filter((c) => c.url.endsWith('/evolucao/revisar'))).toHaveLength(1)
+    expect((await api.evolucao.revisar()).revisadas).toBe(0)
+    expect(chamadas.filter((c) => c.url.endsWith('/evolucao/revisar'))).toHaveLength(1)
+    expect((await api.evolucao.aprovador()).modo).toBe('sombra')
+  })
+
+  it('Agent de Aprovação (demo): IA fora do ar não perde a proposta nem inventa parecer', async () => {
+    const { api } = await masterCom({ revisar: 500 })
+    await api.chatLogs.registrar(log('quantos clientes tenho em Fortaleza?'))
+    await api.evolucao.analisar()
+    expect(await api.evolucao.revisar()).toMatchObject({ revisadas: 0, erros: 1 })
+    expect((await api.evolucao.listar())[0].revisao).toBeUndefined()
   })
 })

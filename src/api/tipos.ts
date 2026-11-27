@@ -1,7 +1,7 @@
 import type {
   Pagina,
   PedidoPagina,
-  ChatLog, ChatLogAjuste, ChatLogForm, FaqForm, FaqItem, RelatorioEvolucao, TipoLog,
+  ChatLog, ChatLogAjuste, ChatLogForm, EstadoDoAprovador, FaqForm, FaqItem, RelatorioEvolucao, ResumoDaExecucao, TipoLog,
   Grupo, GrupoForm, MinhaContaForm, Sessao, Usuario, UsuarioForm,
   Cliente, ClienteForm, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, ProdutoForm, Resumo, StatusOrcamento,
 } from '../types'
@@ -86,6 +86,12 @@ export interface Api {
     analisar(): Promise<{ novos: RelatorioEvolucao[]; semPerguntas: boolean }>
     decidir(id: string, aprovar: boolean): Promise<RelatorioEvolucao>
     desativar(id: string): Promise<RelatorioEvolucao>
+    /** Executa agora o Agent de Aprovação (na versão real é o mesmo que o job de 5 em 5 minutos). */
+    revisar(): Promise<ResumoDaExecucao>
+    /** Em que modo ele está (desligado, sombra ou automático) e quanto do limite do dia já usou. */
+    aprovador(): Promise<EstadoDoAprovador>
+    /** O master conferiu uma aprovação automática sorteada. */
+    conferir(id: string): Promise<RelatorioEvolucao>
   }
   /** Login e sessão. */
   auth: {

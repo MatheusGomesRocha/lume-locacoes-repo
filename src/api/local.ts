@@ -7,11 +7,14 @@ import seedPadrao from '../data/seed.json'
 import { hojeISO } from '../lib/format'
 import { calcularFaltas, calcularTotal, diarias, podeAprovar, podeCancelar, podeEditar, podeEnviar, podeExcluir, podeFinalizar, proximoNumero } from '../lib/regras'
 import { MODULOS_FAQ, STATUS_ORCAMENTO } from '../types'
-import type { ChatLog, Cliente, FaqForm, FaqItem, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, RelatorioEvolucao, Resumo, StatusOrcamento } from '../types'
+import type { ChatLog, Cliente, FaqForm, FaqItem, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, RelatorioEvolucao, ResumoDaExecucao, RevisaoEvolucao, Resumo, StatusOrcamento } from '../types'
 import { ativas, chamarIa, perguntasParaAnalisar, proximoNumeroEvolucao } from '../lib/evolucao'
 import { criarAcessoLocal } from './acesso'
 import { protegerApi } from './protegida'
 import { ApiError, type Api, type FiltroPagamento, type SemPagina } from './tipos'
+
+/** Quantas propostas o Agent de Aprovação revisa por clique na demonstração (poupa a cota do modelo). */
+const POR_EXECUCAO_DEMO = 3
 
 export const CHAVE_STORAGE = 'lume:v1'
 /** Quantos registros do assistente a demonstração guarda (os mais antigos saem). */
@@ -345,6 +348,36 @@ function criarApiDeDados({ storage, agora, seed, ia, quem }: { storage: NonNulla
         const rel = (b.evolucao ?? []).find((x) => x.id === id && x.status === 'aprovada' && x.ativa)
         if (!rel) throw new ApiError('Não há consulta ativa com este código.', 404)
         rel.ativa = false
+        gravar(b)
+        return clonar(rel)
+      },
+      // A demonstração é SEMPRE modo sombra: o Agent dá o parecer, quem decide é o master (sem servidor, não há job nem aprovação automática).
+      async revisar() {
+        const b = ler()
+        const abertas = (b.evolucao ?? []).filter((x) => x.status === 'pendente' && !x.revisao).slice(0, POR_EXECUCAO_DEMO)
+        const resumo: ResumoDaExecucao = { modo: 'sombra', revisadas: 0, aprovadas_automaticamente: 0, erros: 0, pendentes_sem_parecer: (b.evolucao ?? []).filter((x) => x.status === 'pendente' && !x.revisao).length, mensagem: '' }
+        for (const rel of abertas) {
+          try {
+            const parecer = await chamarIa<RevisaoEvolucao>(ia.buscar, ia.url, '/evolucao/revisar', { relatorio: rel, catalogo: ativas(b.evolucao ?? []) })
+            const atual = ler()
+            const alvo = (atual.evolucao ?? []).find((x) => x.id === rel.id)
+            if (alvo) { alvo.revisao = { ...parecer, modo: 'sombra', feita_em: agora().toISOString() }; gravar(atual) }
+            resumo.revisadas += 1
+          } catch {
+            resumo.erros += 1
+          }
+        }
+        resumo.mensagem = resumo.revisadas ? `${resumo.revisadas} proposta(s) revisada(s) no modo sombra.` : resumo.pendentes_sem_parecer ? 'Não consegui revisar agora. Tente de novo.' : 'Nenhuma proposta em aberto para revisar.'
+        return resumo
+      },
+      async aprovador() {
+        return { modo: 'sombra', aprovadas_hoje: 0, limite_dia: 0 }
+      },
+      async conferir(id) {
+        const b = ler()
+        const rel = (b.evolucao ?? []).find((x) => x.id === id)
+        if (!rel) throw new ApiError('Proposta não encontrada.', 404)
+        rel.conferida_por = quem()
         gravar(b)
         return clonar(rel)
       },
