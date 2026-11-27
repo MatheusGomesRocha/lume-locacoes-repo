@@ -175,12 +175,14 @@ export function Chat({ variante = 'painel', esperar = esperarPadrao, atraso = at
                       const Icone = v === 'positivo' ? ThumbsUp : ThumbsDown
                       const marcado = m.feedback === v
                       return (
-                        <button key={v} onClick={() => avaliar(m.id, v)} disabled={!!m.feedback} aria-label={v === 'positivo' ? 'Resposta útil' : 'Resposta ruim'} aria-pressed={marcado}
+                        <button key={v} onClick={() => avaliar(m.id, v)} disabled={!!m.feedback} aria-label={v === 'positivo' ? 'Resposta útil' : 'Essa resposta está errada'} title={v === 'positivo' ? 'Resposta útil' : 'Essa resposta está errada'} aria-pressed={marcado}
                           className={`rounded-lg p-1.5 transition-colors disabled:cursor-default ${marcado ? 'bg-lume-100 text-lume-700' : 'text-tinta-mute hover:bg-gelo-100 hover:text-tinta disabled:opacity-40'}`}>
                           <Icone className="h-3.5 w-3.5" aria-hidden />
+                          {v === 'negativo' && !m.feedback && <span className="ml-1 text-xs">Errada</span>}
                         </button>
                       )
                     })}
+                    {m.feedback === 'negativo' && <span className="ml-1 text-xs text-tinta-mute" role="status">Anotei: a equipe vai revisar essa resposta.</span>}
                   </div>
                 )}
                 {m.opcoes && m.opcoes.length > 0 && m.id === ultimaId && !digitando && (

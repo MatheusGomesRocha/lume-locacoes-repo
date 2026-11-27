@@ -5,7 +5,7 @@ import type { SpecConsulta } from './catalogo'
 
 export const MAX_PERGUNTAS_POR_ANALISE = 5
 
-export interface PerguntaParaAnalise { pergunta: string; tipo: string; vezes: number }
+export interface PerguntaParaAnalise { pergunta: string; tipo: string; vezes: number; resposta_dada?: string }
 
 /**
  * Perguntas sem resposta que ainda valem a pena analisar: não foram respondidas pelo master nem ignoradas, e nenhuma
@@ -21,8 +21,20 @@ export function perguntasParaAnalisar(logs: ChatLog[], faq: FaqItem[], relatorio
     if (g) g.vezes += 1
     else grupos.set(chave, { pergunta: l.pergunta.slice(0, 300), tipo: 'dados', vezes: 1 })
   }
+  // "Essa resposta está errada": a Lumi respondeu e a pessoa marcou. Entra na fila com o que foi respondido, para o Analista achar o que faltou considerar.
+  for (const l of respostasMarcadasComoErradas(logs)) {
+    const chave = normalizarPergunta(l.pergunta)
+    if (chave.length < 4 || jaTratadas.has(chave)) continue
+    const g = grupos.get(chave)
+    if (g) { g.vezes += 1; g.resposta_dada ??= l.resposta.slice(0, 600) }
+    else grupos.set(chave, { pergunta: l.pergunta.slice(0, 300), tipo: 'dados', vezes: 1, resposta_dada: l.resposta.slice(0, 600) })
+  }
   return [...grupos.values()].sort((a, b) => b.vezes - a.vezes).slice(0, MAX_PERGUNTAS_POR_ANALISE)
 }
+
+/** Respostas de dados ou de ajuda que a pessoa marcou como erradas (e que o master não ignorou). As sem resposta já entram pela outra fila. */
+export const respostasMarcadasComoErradas = (logs: ChatLog[]): ChatLog[] =>
+  logs.filter((l) => l.feedback === 'negativo' && (l.tipo === 'consulta' || l.tipo === 'ajuda') && l.desfecho !== 'ignorado' && l.resposta.trim().length > 0)
 
 export const proximoNumeroEvolucao = (relatorios: RelatorioEvolucao[]) =>
   relatorios.reduce((m, r) => Math.max(m, Number(r.id.replace(/\D/g, '')) || 0), 0) + 1
