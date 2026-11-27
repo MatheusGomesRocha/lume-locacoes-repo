@@ -17,7 +17,7 @@ export function tipoDaResposta(r: RespostaChat, resposta: string): TipoLog {
   if (r.acoes?.[0]?.nome === 'excluir_registro') return 'exclusao'
   if (r.acoes?.length) return 'cadastro'
   if (r.confianca === 0 && !r.encontrou && r.fonte === null && resposta.includes('indispon')) return 'erro'
-  return r.encontrou ? 'ajuda' : 'nao_encontrou'
+  return r.encontrou && !respondeuSemDados(resposta) ? 'ajuda' : 'nao_encontrou'
 }
 
 const CORTE_RESPOSTA = 600

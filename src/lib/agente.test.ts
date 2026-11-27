@@ -139,3 +139,11 @@ describe('chat com o agente (várias voltas)', () => {
     expect(tipoDaResposta({ ...base, executar: [{ nome: 'criar_orcamento', args: {} }] }, 'x')).toBe('cadastro')
   })
 })
+
+describe('ajuda que admite não saber', () => {
+  it('vira pergunta sem resposta (entra na fila dos Agents), não "ajuda"', () => {
+    const base = { encontrou: true, resposta: '', fonte: null, confianca: 1, relacionadas: [] } as never
+    expect(tipoDaResposta(base, 'Não encontrei essa informação na ajuda. O número do orçamento é gerado automaticamente.')).toBe('nao_encontrou')
+    expect(tipoDaResposta(base, 'O número do orçamento é gerado automaticamente.')).toBe('ajuda')
+  })
+})
