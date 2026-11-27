@@ -698,6 +698,118 @@
     ]
    },
    "erro": "parametro"
+  },
+  {
+   "sessao": "master",
+   "nome": "período de/ate: só um dia",
+   "params": {
+    "de": "2026-11-25",
+    "ate": "2026-11-25"
+   },
+   "spec": {
+    "entidade": "clientes",
+    "operacao": "contar",
+    "permissao": "clientes.ver",
+    "parametros": {
+     "de": {
+      "tipo": "data",
+      "obrigatorio": true
+     },
+     "ate": {
+      "tipo": "data",
+      "obrigatorio": true
+     }
+    },
+    "filtros": [
+     {
+      "campo": "criado_em",
+      "op": "maior_igual",
+      "parametro": "de"
+     },
+     {
+      "campo": "criado_em",
+      "op": "menor_igual",
+      "parametro": "ate"
+     }
+    ]
+   },
+   "esperado": {
+    "total": 1
+   }
+  },
+  {
+   "sessao": "master",
+   "nome": "período de/ate: semana inteira",
+   "params": {
+    "de": "2026-11-23",
+    "ate": "2026-11-26"
+   },
+   "spec": {
+    "entidade": "clientes",
+    "operacao": "contar",
+    "permissao": "clientes.ver",
+    "parametros": {
+     "de": {
+      "tipo": "data",
+      "obrigatorio": true
+     },
+     "ate": {
+      "tipo": "data",
+      "obrigatorio": true
+     }
+    },
+    "filtros": [
+     {
+      "campo": "criado_em",
+      "op": "maior_igual",
+      "parametro": "de"
+     },
+     {
+      "campo": "criado_em",
+      "op": "menor_igual",
+      "parametro": "ate"
+     }
+    ]
+   },
+   "esperado": {
+    "total": 2
+   }
+  },
+  {
+   "nome": "período com data inválida é recusado",
+   "sessao": "master",
+   "params": {
+    "de": "ontem",
+    "ate": "2026-11-26"
+   },
+   "spec": {
+    "entidade": "clientes",
+    "operacao": "contar",
+    "permissao": "clientes.ver",
+    "parametros": {
+     "de": {
+      "tipo": "data",
+      "obrigatorio": true
+     },
+     "ate": {
+      "tipo": "data",
+      "obrigatorio": true
+     }
+    },
+    "filtros": [
+     {
+      "campo": "criado_em",
+      "op": "maior_igual",
+      "parametro": "de"
+     },
+     {
+      "campo": "criado_em",
+      "op": "menor_igual",
+      "parametro": "ate"
+     }
+    ]
+   },
+   "erro": "parametro"
   }
  ]
 }
