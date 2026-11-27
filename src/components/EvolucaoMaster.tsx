@@ -1,9 +1,10 @@
-import { Check, FileText, Power, Sparkles, X } from 'lucide-react'
+import { Check, FileText, Power, Sparkles, X, Download } from 'lucide-react'
 import { Fragment, useState, type ReactNode } from 'react'
 import { mensagemDeErro } from './Formulario'
 import { Botao, CaixaErro, Carregando, Confirmar, Modal, Vazio, useAviso } from './ui'
 import { useApi } from '../lib/servicos'
 import { estatisticasEvolucao } from '../lib/evolucao'
+import { errosDoTester } from '../lib/errosTester'
 import { useCarregar } from '../lib/useCarregar'
 import type { RelatorioEvolucao, VereditoEvolucao } from '../types'
 
@@ -77,6 +78,17 @@ export function EvolucaoMaster() {
     d.acao === 'aprovar' ? `A consulta “${d.rel.pacote?.spec.nome}” passa a responder perguntas no chat para quem tem a permissão ${d.rel.pacote?.spec.permissao}. Ela só lê dados. Você pode desativá-la depois.`
       : d.acao === 'reprovar' ? 'Nada é ativado e a Lumi continua sem responder esta pergunta.' : 'A Lumi deixa de usar esta consulta. O registro da aprovação continua guardado.'
 
+  /** Baixa tudo o que o Tester errou ou o código corrigiu, tirado dos relatórios guardados: é o arquivo que se manda para análise. */
+  const baixarErros = () => {
+    const itens = errosDoTester(lista.dados ?? [])
+    const blob = new Blob([JSON.stringify({ gerado_em: new Date().toISOString(), total: itens.length, itens }, null, 2)], { type: 'application/json' })
+    const a = document.createElement('a')
+    a.href = URL.createObjectURL(blob)
+    a.download = `erros-do-tester-${new Date().toISOString().slice(0, 10)}.json`
+    a.click()
+    URL.revokeObjectURL(a.href)
+  }
+
   return (
     <>
       <div className="mb-4 flex flex-wrap items-center justify-between gap-3">
@@ -84,7 +96,10 @@ export function EvolucaoMaster() {
           Três Agents trabalham nas perguntas que a Lumi não soube responder: um propõe, outro cria a consulta, outro testa e revisa.
           Você lê o relatório e decide. <strong className="text-noite-900">Nada entra em uso sem a sua aprovação.</strong>
         </p>
-        <Botao onClick={() => void analisar()} disabled={analisando}><Sparkles className="h-4 w-4" aria-hidden /> {analisando ? 'Os Agents estão trabalhando…' : 'Analisar perguntas sem resposta'}</Botao>
+        <div className="flex flex-wrap gap-2">
+                  <Botao onClick={() => void analisar()} disabled={analisando}><Sparkles className="h-4 w-4" aria-hidden /> {analisando ? 'Os Agents estão trabalhando…' : 'Analisar perguntas sem resposta'}</Botao>
+          <Botao variante="secundario" onClick={baixarErros} disabled={(lista.dados ?? []).length === 0}><Download className="h-4 w-4" aria-hidden /> Baixar erros do Tester</Botao>
+        </div>
       </div>
       {analisando && <p role="status" className="mb-4 rounded-xl bg-gelo-50 p-3 text-sm text-tinta-soft">Isso pode levar 1 a 2 minutos: cada proposta passa por três Agents.</p>}
 
