@@ -42,7 +42,8 @@ export async function chamarIa<T>(buscar: typeof fetch, base: string, caminho: s
     return json as T
   } catch (e) {
     if (e instanceof ApiError) throw e
-    throw new ApiError('Não foi possível falar com a API de IA agora. Tente de novo em instantes.', 502)
+    const tecnico = e instanceof Error ? `${e.name}: ${e.message}` : String(e)
+    throw new ApiError(`Não foi possível falar com a API de IA agora. Tente de novo em instantes. [${caminho} · ${tecnico}]`, 502)
   } finally {
     clearTimeout(timer)
   }
