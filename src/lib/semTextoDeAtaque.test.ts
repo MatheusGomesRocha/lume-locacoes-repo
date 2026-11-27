@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { semTextoDeAtaque, TEXTO_OMITIDO } from './evolucao'
+import { semTextoDeAtaque, temTextoDeAtaque, TEXTO_OMITIDO } from './evolucao'
 
 describe('semTextoDeAtaque', () => {
   it('troca a frase de ataque dos testes pelo aviso, em qualquer profundidade', () => {
@@ -17,5 +17,12 @@ describe('semTextoDeAtaque', () => {
     const com = { p: 'union select' }
     semTextoDeAtaque(com)
     expect(com.p).toBe('union select')
+  })
+})
+
+describe('temTextoDeAtaque', () => {
+  it('acha a frase em qualquer profundidade e deixa o resto passar', () => {
+    expect(temTextoDeAtaque({ pergunta: 'quero DROP TABLE clientes', vezes: 1 })).toBe(true)
+    expect(temTextoDeAtaque([{ pergunta: 'quantos clientes novos?' }])).toBe(false)
   })
 })

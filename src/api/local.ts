@@ -8,7 +8,7 @@ import { hojeISO } from '../lib/format'
 import { calcularFaltas, calcularTotal, diarias, podeAprovar, podeCancelar, podeEditar, podeEnviar, podeExcluir, podeFinalizar, proximoNumero } from '../lib/regras'
 import { MODULOS_FAQ, STATUS_ORCAMENTO } from '../types'
 import type { ChatLog, Cliente, FaqForm, FaqItem, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, RelatorioEvolucao, ResumoDaExecucao, RevisaoEvolucao, Resumo, StatusOrcamento } from '../types'
-import { ativas, chamarIa, perguntasParaAnalisar, proximoNumeroEvolucao, semTextoDeAtaque } from '../lib/evolucao'
+import { ativas, chamarIa, perguntasParaAnalisar, proximoNumeroEvolucao, semTextoDeAtaque, temTextoDeAtaque } from '../lib/evolucao'
 import { criarAcessoLocal } from './acesso'
 import { protegerApi } from './protegida'
 import { ApiError, type Api, type FiltroPagamento, type SemPagina } from './tipos'
@@ -310,7 +310,7 @@ function criarApiDeDados({ storage, agora, seed, ia, quem }: { storage: NonNulla
       async analisar() {
         const b = ler()
         const existentes = b.evolucao ?? []
-        const perguntas = perguntasParaAnalisar(b.chat_logs ?? [], b.faq_itens ?? [], existentes)
+        const perguntas = perguntasParaAnalisar(b.chat_logs ?? [], b.faq_itens ?? [], existentes).filter((p) => !temTextoDeAtaque(p))
         if (!perguntas.length) return { novos: [], semPerguntas: true }
         const r = await chamarIa<{ relatorios: Omit<RelatorioEvolucao, 'ativa' | 'criado_em'>[] }>(ia.buscar, ia.url, '/evolucao/propor', {
           perguntas, catalogo: ativas(existentes), proximo_numero: proximoNumeroEvolucao(existentes),

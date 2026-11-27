@@ -36,6 +36,14 @@ export const ativas = (relatorios: RelatorioEvolucao[]): SpecConsulta[] =>
 const TEXTO_DE_ATAQUE = /\b(drop\s+table|union\s+select|delete\s+from|insert\s+into|truncate\s+table)\b/i
 export const TEXTO_OMITIDO = '[texto de injeção omitido no envio]'
 
+/** Há frase de ataque em algum texto do valor? (perguntas assim não vão para o Analista: o servidor recusaria o pacote inteiro.) */
+export function temTextoDeAtaque(valor: unknown): boolean {
+  if (typeof valor === 'string') return TEXTO_DE_ATAQUE.test(valor)
+  if (Array.isArray(valor)) return valor.some(temTextoDeAtaque)
+  if (valor && typeof valor === 'object') return Object.values(valor).some(temTextoDeAtaque)
+  return false
+}
+
 /** Copia o valor trocando qualquer texto com frase de ataque pelo aviso acima (objetos e listas inclusive). */
 export function semTextoDeAtaque<T>(valor: T): T {
   if (typeof valor === 'string') return (TEXTO_DE_ATAQUE.test(valor) ? TEXTO_OMITIDO : valor) as T
