@@ -38,7 +38,7 @@ export function somarConsumo(a?: ConsumoModelo, b?: ConsumoModelo): ConsumoModel
 /** Monta o registro de uma pergunta. Guarda a ferramenta usada, mas nunca os dados que ela leu. */
 export function montarRegistro(pergunta: string, r: RespostaChat, texto: string, latenciaMs: number, ferramenta: string | null, tipo: TipoLog): ChatLogForm {
   return {
-    pergunta: pergunta.slice(0, 500),
+    pergunta: (r.pergunta_completa || pergunta).slice(0, 500),
     resposta: texto.slice(0, CORTE_RESPOSTA),
     tipo,
     fonte_id: r.fonte?.id ?? null,

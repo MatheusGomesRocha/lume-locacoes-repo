@@ -100,3 +100,10 @@ describe('resultado vazio de consulta que rodou', () => {
     expect(tipoDaResposta({ voltas: 2, ferramentas: ['consultar_orcamentos'], encontrou: true } as never, 'Não encontrei nenhum orçamento com devolução hoje.')).toBe('nao_encontrou')
   })
 })
+
+describe('pergunta completa nos logs', () => {
+  it('guarda a pergunta já completa quando a Lumi entendeu um seguimento', () => {
+    const r = { encontrou: false, resposta: 'x', fonte: null, confianca: 1, relacionadas: [], usou_contexto: true, gerada_por_llm: false, pergunta_completa: 'quais os nomes dos clientes cadastrados hoje?' } as never
+    expect(montarRegistro('e quais os nomes deles?', r, 'x', 5, null, 'nao_encontrou').pergunta).toBe('quais os nomes dos clientes cadastrados hoje?')
+  })
+})
