@@ -98,7 +98,11 @@ export function bancoDoSeed(seed: Seed, base: Date = new Date()): Banco {
     status: p.pago_dias === null ? 'pendente' : 'pago',
   }))
 
-  return { clientes: clonar(seed.clientes), produtos: clonar(seed.produtos), orcamentos, pagamentos }
+  // O seed não tem data de cadastro: espalha-se de forma fixa para trás (1, 5, 9... dias), para que "últimos 7 dias" tenha o que mostrar.
+  const cadastradoHa = (i: number) => new Date(base.getFullYear(), base.getMonth(), base.getDate() - (i * 4 + 1), 12).toISOString()
+  const clientes = clonar(seed.clientes).map((c, i) => ({ ...c, criado_em: cadastradoHa(i) }))
+  const produtos = clonar(seed.produtos).map((p, i) => ({ ...p, criado_em: cadastradoHa(i) }))
+  return { clientes, produtos, orcamentos, pagamentos }
 }
 
 export interface OpcoesLocal {
@@ -382,7 +386,7 @@ function criarApiDeDados({ storage, agora, seed, ia, quem }: { storage: NonNulla
         if (d.tipo !== 'PF' && d.tipo !== 'PJ') campos.tipo = ['O valor escolhido em tipo é inválido.']
         if (d.email && !/^\S+@\S+\.\S+$/.test(d.email)) campos.email = ['O campo e-mail deve ser um e-mail válido.']
         if (Object.keys(campos).length) throw new ApiError(Object.values(campos)[0][0], 422, [], campos)
-        const novo: Cliente = { ...d, id: proximoId(b.clientes) }
+        const novo: Cliente = { ...d, id: proximoId(b.clientes), criado_em: agora().toISOString() }
         b.clientes.push(novo)
         gravar(b)
         return novo
@@ -418,7 +422,7 @@ function criarApiDeDados({ storage, agora, seed, ia, quem }: { storage: NonNulla
         const b = ler()
         const campos = validarProduto(b, d)
         if (Object.keys(campos).length) throw new ApiError(Object.values(campos)[0][0], 422, [], campos)
-        const novo: Produto = { ...d, valor_reposicao: d.valor_reposicao || 0, ativo: d.ativo ?? true, id: proximoId(b.produtos) }
+        const novo: Produto = { ...d, valor_reposicao: d.valor_reposicao || 0, ativo: d.ativo ?? true, id: proximoId(b.produtos), criado_em: agora().toISOString() }
         b.produtos.push(novo)
         gravar(b)
         return novo

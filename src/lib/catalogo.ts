@@ -1,6 +1,7 @@
 import type { Api } from '../api/tipos'
 import { ApiError } from '../api/tipos'
 import type { Chamada } from '../types'
+import { hojeISO } from './format'
 import { ehAdmin } from './permissoes'
 
 /**
@@ -34,8 +35,8 @@ export interface SpecConsulta {
 
 /** Só o que o executor precisa saber de cada entidade (o esquema completo mora na API Python). */
 const ENTIDADES: Record<string, { soAdmin: boolean; campos: Record<string, TipoCampo> }> = {
-  clientes: { soAdmin: false, campos: { nome: 'texto', tipo: 'enum', cidade: 'texto', observacoes: 'texto' } },
-  produtos: { soAdmin: false, campos: { codigo: 'texto', nome: 'texto', categoria: 'texto', valor_diaria: 'numero', valor_reposicao: 'numero', quantidade: 'numero', ativo: 'bool' } },
+  clientes: { soAdmin: false, campos: { nome: 'texto', tipo: 'enum', cidade: 'texto', observacoes: 'texto', criado_em: 'data' } },
+  produtos: { soAdmin: false, campos: { codigo: 'texto', nome: 'texto', categoria: 'texto', valor_diaria: 'numero', valor_reposicao: 'numero', quantidade: 'numero', ativo: 'bool', criado_em: 'data' } },
   orcamentos: { soAdmin: false, campos: { numero: 'texto', cliente_nome: 'texto', evento: 'texto', status: 'enum', data_retirada: 'data', data_devolucao: 'data', diarias: 'numero', desconto: 'numero', total: 'numero' } },
   pagamentos: { soAdmin: false, campos: { orcamento_numero: 'texto', valor: 'numero', vencimento: 'data', pago_em: 'data', status: 'enum', forma: 'enum' } },
   usuarios: { soAdmin: true, campos: { nome: 'texto', papel: 'enum', grupo_nome: 'texto', ativo: 'bool' } },
@@ -95,7 +96,21 @@ function validarParametros(spec: SpecConsulta, params: Record<string, unknown>):
   return saida
 }
 
-function confere(op: string, atual: unknown, esperado: unknown, tipo: TipoCampo): boolean {
+const MAX_DIAS = 3650
+
+/** "Nos últimos N dias" = de (hoje - N) até hoje, inclusive. N = 0 é só hoje. Igual ao executor Python. */
+function janelaDeDias(hoje: string | undefined, dias: unknown): [string, string] {
+  if (!hoje || !dataValida(hoje)) throw new ErroConsulta('falta a data de hoje', 'erro')
+  if (typeof dias !== 'number' || !Number.isInteger(dias) || dias < 0 || dias > MAX_DIAS) throw new ErroConsulta(`quantidade de dias inválida (0 a ${MAX_DIAS})`, 'parametro')
+  const [a, m, d] = hoje.split('-').map(Number)
+  return [hojeISO(-dias, new Date(a, m - 1, d)), hoje]
+}
+
+function confere(op: string, atual: unknown, esperado: unknown, tipo: TipoCampo, hoje?: string): boolean {
+  if (op === 'ultimos_dias') {
+    const [de, ate] = janelaDeDias(hoje, esperado)
+    return atual !== null && atual !== undefined && String(atual).slice(0, 10) >= de && String(atual).slice(0, 10) <= ate
+  }
   if (op === 'contem') return atual !== null && atual !== undefined && casaPalavras(esperado, atual)
   if (atual === null || atual === undefined) return op === 'diferente'
   let a = atual as string | number | boolean
@@ -106,7 +121,7 @@ function confere(op: string, atual: unknown, esperado: unknown, tipo: TipoCampo)
   return op === 'maior_igual' ? a >= e : a <= e
 }
 
-export interface SessaoConsulta { papel: string; permissoes: string[] }
+export interface SessaoConsulta { papel: string; permissoes: string[]; /** AAAA-MM-DD; obrigatório para filtros "nos últimos N dias". */ hoje?: string }
 
 export function executarSpec(spec: SpecConsulta, params: Record<string, unknown>, dados: Record<string, Linha[]>, sessao: SessaoConsulta): Record<string, unknown> {
   const ent = ENTIDADES[spec.entidade]
@@ -125,7 +140,7 @@ export function executarSpec(spec: SpecConsulta, params: Record<string, unknown>
     } else {
       esperado = f.valor
     }
-    linhas = linhas.filter((l) => confere(f.op, l[f.campo], esperado, tipo))
+    linhas = linhas.filter((l) => confere(f.op, l[f.campo], esperado, tipo, sessao.hoje))
   }
   const saida: Record<string, unknown> = { total: linhas.length }
   if (spec.operacao === 'somar') {
@@ -152,12 +167,15 @@ export function executarSpec(spec: SpecConsulta, params: Record<string, unknown>
 // ---------------------------------------------------------------------------
 // Ligação com as telas: lê os dados pela MESMA API das telas (com as permissões de quem está logado)
 // ---------------------------------------------------------------------------
+/** Dia (no fuso de quem usa) em que o registro foi criado; null se a API não informa. */
+const diaLocal = (iso?: string | null) => (iso ? hojeISO(0, new Date(iso)) : null)
+
 export async function carregarEntidade(api: Api, entidade: string): Promise<Linha[]> {
   switch (entidade) {
     case 'clientes':
-      return (await api.clientes.listar()).map((c) => ({ nome: c.nome, tipo: c.tipo, cidade: c.cidade, observacoes: c.observacoes ?? null }))
+      return (await api.clientes.listar()).map((c) => ({ nome: c.nome, tipo: c.tipo, cidade: c.cidade, observacoes: c.observacoes ?? null, criado_em: diaLocal(c.criado_em) }))
     case 'produtos':
-      return (await api.produtos.listar()).map((p) => ({ codigo: p.codigo, nome: p.nome, categoria: p.categoria, valor_diaria: p.valor_diaria, valor_reposicao: p.valor_reposicao, quantidade: p.quantidade, ativo: p.ativo }))
+      return (await api.produtos.listar()).map((p) => ({ codigo: p.codigo, nome: p.nome, categoria: p.categoria, valor_diaria: p.valor_diaria, valor_reposicao: p.valor_reposicao, quantidade: p.quantidade, ativo: p.ativo, criado_em: diaLocal(p.criado_em) }))
     case 'orcamentos':
       return (await api.orcamentos.listar()).map((o) => ({ numero: o.numero, cliente_nome: o.cliente?.nome ?? null, evento: o.evento, status: o.status, data_retirada: o.data_retirada, data_devolucao: o.data_devolucao, diarias: o.diarias, desconto: o.desconto, total: o.total }))
     case 'pagamentos':
@@ -179,7 +197,7 @@ export async function executarCatalogo(api: Api, chamada: Chamada): Promise<unkn
   if (!spec) return { erro: 'esta consulta não está mais aprovada' }
   const params = (chamada.args.params ?? {}) as Record<string, unknown>
   try {
-    const ctx: SessaoConsulta = { papel: sessao.usuario.papel, permissoes: sessao.permissoes }
+    const ctx: SessaoConsulta = { papel: sessao.usuario.papel, permissoes: sessao.permissoes, hoje: hojeISO() }
     // permissão e parâmetros são conferidos ANTES de ler qualquer dado
     executarSpec({ ...spec, operacao: 'contar', filtros: [] }, params, { [spec.entidade]: [] }, ctx)
     return executarSpec(spec, params, { [spec.entidade]: await carregarEntidade(api, spec.entidade) }, ctx)

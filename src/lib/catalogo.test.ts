@@ -3,6 +3,7 @@ import { join } from 'node:path'
 import { MASTER_EMAIL, SENHA_DEMO } from '../api/acesso'
 import { criarApiLocal } from '../api/local'
 import { HOJE, memoria } from '../test/utils'
+import { hojeISO } from './format'
 import { criarClienteChat } from './chat'
 import { ErroConsulta, carregarEntidade, executarSpec, type Linha, type SessaoConsulta, type SpecConsulta } from './catalogo'
 import { executarConsulta } from './ferramentas'
@@ -97,5 +98,27 @@ describe('entidade grupos de permissão', () => {
     const ctx = { papel: sessao.usuario.papel, permissoes: sessao.permissoes }
     expect(executarSpec(spec, {}, { grupos: linhas }, ctx)).toEqual({ total: (await api.grupos.listar()).length })
     expect(() => executarSpec(spec, {}, { grupos: linhas }, { papel: 'usuario', permissoes: ['usuarios.ver'] })).toThrow(ErroConsulta)
+  })
+})
+
+describe('clientes cadastrados nos últimos N dias (data relativa)', () => {
+  const spec: SpecConsulta = {
+    nome: 'contar_clientes_recentes', descricao: 'Conta clientes cadastrados nos últimos N dias.', entidade: 'clientes', operacao: 'contar', permissao: 'clientes.ver', papel_minimo: 'usuario',
+    parametros: { dias: { tipo: 'numero', obrigatorio: true } }, filtros: [{ campo: 'criado_em', op: 'ultimos_dias', parametro: 'dias' }],
+    exemplos: ['quantos clientes foram cadastrados nos últimos 7 dias', 'clientes novos nos últimos 30 dias', 'quantos clientes cadastrei hoje'],
+  }
+
+  it('conta pelo dia do cadastro, e um cliente novo entra na hora', async () => {
+    const api = criarApiLocal({ storage: memoria(), agora: () => HOJE })
+    const sessao = await api.auth.entrar(MASTER_EMAIL, SENHA_DEMO)
+    const ctx = { papel: sessao.usuario.papel, permissoes: sessao.permissoes, hoje: hojeISO(0, HOJE) }
+    const contar = async (dias: number) => (executarSpec(spec, { dias }, { clientes: await carregarEntidade(api, 'clientes') }, ctx) as { total: number }).total
+    const total = (await api.clientes.listar()).length
+    expect(await contar(7)).toBeGreaterThan(0) // o seed espalha os cadastros para trás
+    expect(await contar(7)).toBeLessThan(total)
+    expect(await contar(3650)).toBe(total)
+    const antes = await contar(0)
+    await api.clientes.criar({ nome: 'Cliente de hoje', tipo: 'PF', documento: null, email: null, telefone: null, cidade: null, observacoes: null })
+    expect(await contar(0)).toBe(antes + 1)
   })
 })

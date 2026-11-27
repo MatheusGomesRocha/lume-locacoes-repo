@@ -14,8 +14,10 @@ export interface Cliente {
   telefone: string | null
   cidade: string | null
   observacoes: string | null
+  /** Quando foi cadastrado (ISO). Vem do servidor; a demo grava ao criar. */
+  criado_em?: string
 }
-export type ClienteForm = Omit<Cliente, 'id'>
+export type ClienteForm = Omit<Cliente, 'id' | 'criado_em'>
 
 export interface Produto {
   id: number
@@ -27,8 +29,9 @@ export interface Produto {
   valor_reposicao: number
   quantidade: number
   ativo: boolean
+  criado_em?: string
 }
-export type ProdutoForm = Omit<Produto, 'id'>
+export type ProdutoForm = Omit<Produto, 'id' | 'criado_em'>
 
 export interface ItemOrcamento {
   id?: number
