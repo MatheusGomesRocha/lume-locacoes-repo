@@ -1,7 +1,7 @@
 import { criarApiLocal } from '../api/local'
 import { ApiError } from '../api/tipos'
 import { HOJE, memoria } from '../test/utils'
-import { excluir, executarConsulta, localizarParaExcluir, MAX_LINHAS, prepararCadastro, semAcento } from './ferramentas'
+import { diaLocal, excluir, executarConsulta, localizarParaExcluir, MAX_LINHAS, prepararCadastro, semAcento } from './ferramentas'
 
 const nova = () => criarApiLocal({ storage: memoria(), agora: () => HOJE, protegida: false })
 
@@ -41,6 +41,42 @@ describe('consultas (só leitura, poucos campos)', () => {
     const alvo = todos[0].data_devolucao
     const r = (await executarConsulta(api, { nome: 'consultar_orcamentos', args: { devolucao_de: alvo, devolucao_ate: alvo } })) as { total: number }
     expect(r.total).toBe(todos.filter((o) => o.data_devolucao === alvo).length)
+  })
+
+  it('orçamento tem três datas diferentes: criado, retirada e devolução não se misturam', async () => {
+    const api = nova()
+    const todos = await api.orcamentos.listar()
+    const alvo = diaLocal(todos[0].criado_em)
+    const criados = (await executarConsulta(api, { nome: 'consultar_orcamentos', args: { criado_de: alvo, criado_ate: alvo } })) as { total: number }
+    expect(criados.total).toBe(todos.filter((o) => diaLocal(o.criado_em) === alvo).length)
+    expect(criados.total).toBeGreaterThan(0)
+    // o mesmo dia pedido como retirada ou como devolução é outra contagem (a menos que coincida por acaso nos dados)
+    const retirada = (await executarConsulta(api, { nome: 'consultar_orcamentos', args: { retirada_de: alvo, retirada_ate: alvo } })) as { total: number }
+    expect(retirada.total).toBe(todos.filter((o) => o.data_retirada === alvo).length)
+  })
+
+  it('"criados hoje": um orçamento acabado de criar aparece, mesmo com retirada e devolução em outro dia', async () => {
+    const api = nova()
+    const cliente = (await api.clientes.listar())[0]
+    const produto = (await api.produtos.listar())[0]
+    const novo = await api.orcamentos.criar({ cliente_id: cliente.id, evento: 'Teste de hoje', data_retirada: '2030-01-10', data_devolucao: '2030-01-11', desconto: 0, observacoes: '', itens: [{ produto_id: produto.id, quantidade: 1 }] })
+    const hoje = diaLocal(HOJE.toISOString())
+    const r = (await executarConsulta(api, { nome: 'consultar_orcamentos', args: { criado_de: hoje, criado_ate: hoje } })) as { total: number; linhas: { numero: string }[] }
+    expect(r.linhas.map((l) => l.numero)).toContain(novo.numero)
+    const porRetirada = (await executarConsulta(api, { nome: 'consultar_orcamentos', args: { retirada_de: hoje, retirada_ate: hoje } })) as { linhas: { numero: string }[] }
+    expect(porRetirada.linhas.map((l) => l.numero)).not.toContain(novo.numero)
+  })
+
+  it('clientes e produtos filtram pelo dia do cadastro e cobranças pelo dia do pagamento', async () => {
+    const api = nova()
+    const clientes = await api.clientes.listar()
+    const alvo = diaLocal(clientes[0].criado_em)
+    const c = (await executarConsulta(api, { nome: 'consultar_clientes', args: { criado_de: alvo, criado_ate: alvo } })) as { total: number }
+    expect(c.total).toBe(clientes.filter((x) => diaLocal(x.criado_em) === alvo).length)
+    const pagas = (await api.pagamentos.listar('pago')).filter((p) => p.pago_em)
+    const dia = diaLocal(pagas[0].pago_em)
+    const p = (await executarConsulta(api, { nome: 'consultar_cobrancas', args: { pago_de: dia, pago_ate: dia } })) as { total: number }
+    expect(p.total).toBe((await api.pagamentos.listar('todos')).filter((x) => diaLocal(x.pago_em) === dia).length)
   })
 
   it('filtra cobranças pelo vencimento', async () => {

@@ -25,6 +25,16 @@ const soma = (valores: number[]) => Math.round(valores.reduce((s, v) => s + Math
 // ---------------------------------------------------------------------------
 // Consultas
 // ---------------------------------------------------------------------------
+/** Dia (AAAA-MM-DD) em que algo aconteceu. "criado_em" vem como data e hora: vale o dia no relógio de quem pergunta, não o do servidor (UTC). */
+export function diaLocal(iso?: string | null): string {
+  if (!iso) return ''
+  if (iso.length <= 10) return iso
+  const d = new Date(iso)
+  if (Number.isNaN(d.getTime())) return iso.slice(0, 10)
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+}
+const dentro = (dia: string, de?: string, ate?: string) => (!de || (!!dia && dia >= de)) && (!ate || (!!dia && dia <= ate))
+
 export async function executarConsulta(api: Api, chamada: Chamada): Promise<unknown> {
   if (chamada.nome === 'catalogo') return executarCatalogo(api, chamada) // consulta criada pelos Agents e aprovada pelo master
   const a = chamada.args
@@ -45,7 +55,8 @@ export async function executarConsulta(api: Api, chamada: Chamada): Promise<unkn
       const devDe = texto(a.devolucao_de)
       const devAte = texto(a.devolucao_ate)
       const lista = (await api.orcamentos.listar({ busca: texto(a.busca), status: status ?? '' }))
-        .filter((o) => (!de || o.data_retirada >= de) && (!ate || o.data_retirada <= ate) && (!devDe || o.data_devolucao >= devDe) && (!devAte || o.data_devolucao <= devAte))
+        .filter((o) => (!de || o.data_retirada >= de) && (!ate || o.data_retirada <= ate) && (!devDe || o.data_devolucao >= devDe) && (!devAte || o.data_devolucao <= devAte)
+          && dentro(diaLocal(o.criado_em), texto(a.criado_de), texto(a.criado_ate)))
       return {
         total: lista.length,
         soma_dos_totais: soma(lista.map((o) => o.total)),
@@ -53,7 +64,7 @@ export async function executarConsulta(api: Api, chamada: Chamada): Promise<unkn
       }
     }
     case 'consultar_clientes': {
-      const lista = await api.clientes.listar(texto(a.busca))
+      const lista = (await api.clientes.listar(texto(a.busca))).filter((c) => dentro(diaLocal(c.criado_em), texto(a.criado_de), texto(a.criado_ate)))
       return { total: lista.length, linhas: lista.slice(0, MAX_LINHAS).map((c) => ({ nome: c.nome, tipo: c.tipo === 'PJ' ? 'empresa' : 'pessoa física', cidade: c.cidade })) }
     }
     case 'consultar_produtos': {
@@ -74,7 +85,7 @@ export async function executarConsulta(api: Api, chamada: Chamada): Promise<unkn
           }
         }
       }
-      const lista = await api.produtos.listar({ busca, categoria, ativo: typeof a.ativo === 'boolean' ? a.ativo : undefined })
+      const lista = (await api.produtos.listar({ busca, categoria, ativo: typeof a.ativo === 'boolean' ? a.ativo : undefined })).filter((p) => dentro(diaLocal(p.criado_em), texto(a.criado_de), texto(a.criado_ate)))
       return {
         total: lista.length,
         ...(aviso ? { aviso } : {}),
@@ -85,7 +96,7 @@ export async function executarConsulta(api: Api, chamada: Chamada): Promise<unkn
       const situacao = (texto(a.situacao) ?? 'todos') as 'todos' | 'pendente' | 'atrasado' | 'pago' | 'cancelado'
       const venDe = texto(a.vencimento_de)
       const venAte = texto(a.vencimento_ate)
-      const lista = (await api.pagamentos.listar(situacao)).filter((p) => (!venDe || p.vencimento >= venDe) && (!venAte || p.vencimento <= venAte))
+      const lista = (await api.pagamentos.listar(situacao)).filter((p) => (!venDe || p.vencimento >= venDe) && (!venAte || p.vencimento <= venAte) && dentro(diaLocal(p.pago_em), texto(a.pago_de), texto(a.pago_ate)))
       return {
         total: lista.length,
         soma_dos_valores: soma(lista.map((p) => p.valor)),
