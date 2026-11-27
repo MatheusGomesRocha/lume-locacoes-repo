@@ -32,6 +32,18 @@ export const ativas = (relatorios: RelatorioEvolucao[]): SpecConsulta[] =>
   relatorios.filter((r) => r.status === 'aprovada' && r.ativa && r.pacote).map((r) => r.pacote!.spec)
 
 /** Fala com a API de IA (só a demonstração usa isto: na versão real quem fala é o Laravel). */
+/** Frase de ataque dos testes do Tester (ex.: "…; DROP TABLE"). O servidor da API recusa corpos com ela, então ela não viaja: fica só a descrição do caso. */
+const TEXTO_DE_ATAQUE = /\b(drop\s+table|union\s+select|delete\s+from|insert\s+into|truncate\s+table)\b/i
+export const TEXTO_OMITIDO = '[texto de injeção omitido no envio]'
+
+/** Copia o valor trocando qualquer texto com frase de ataque pelo aviso acima (objetos e listas inclusive). */
+export function semTextoDeAtaque<T>(valor: T): T {
+  if (typeof valor === 'string') return (TEXTO_DE_ATAQUE.test(valor) ? TEXTO_OMITIDO : valor) as T
+  if (Array.isArray(valor)) return valor.map((v) => semTextoDeAtaque(v)) as T
+  if (valor && typeof valor === 'object') return Object.fromEntries(Object.entries(valor).map(([k, v]) => [k, semTextoDeAtaque(v)])) as T
+  return valor
+}
+
 export async function chamarIa<T>(buscar: typeof fetch, base: string, caminho: string, corpo: unknown, tempoMs = 120_000): Promise<T> {
   const controle = new AbortController()
   const timer = setTimeout(() => controle.abort(), tempoMs)

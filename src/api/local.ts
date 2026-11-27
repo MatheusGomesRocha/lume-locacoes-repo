@@ -8,7 +8,7 @@ import { hojeISO } from '../lib/format'
 import { calcularFaltas, calcularTotal, diarias, podeAprovar, podeCancelar, podeEditar, podeEnviar, podeExcluir, podeFinalizar, proximoNumero } from '../lib/regras'
 import { MODULOS_FAQ, STATUS_ORCAMENTO } from '../types'
 import type { ChatLog, Cliente, FaqForm, FaqItem, FormaPagamento, Orcamento, OrcamentoForm, Pagamento, Produto, RelatorioEvolucao, ResumoDaExecucao, RevisaoEvolucao, Resumo, StatusOrcamento } from '../types'
-import { ativas, chamarIa, perguntasParaAnalisar, proximoNumeroEvolucao } from '../lib/evolucao'
+import { ativas, chamarIa, perguntasParaAnalisar, proximoNumeroEvolucao, semTextoDeAtaque } from '../lib/evolucao'
 import { criarAcessoLocal } from './acesso'
 import { protegerApi } from './protegida'
 import { ApiError, type Api, type FiltroPagamento, type SemPagina } from './tipos'
@@ -359,7 +359,7 @@ function criarApiDeDados({ storage, agora, seed, ia, quem }: { storage: NonNulla
         let motivoDoErro = ''
         for (const rel of abertas) {
           try {
-            const parecer = await chamarIa<RevisaoEvolucao>(ia.buscar, ia.url, '/evolucao/revisar', { relatorio: rel, catalogo: ativas(b.evolucao ?? []) })
+            const parecer = await chamarIa<RevisaoEvolucao>(ia.buscar, ia.url, '/evolucao/revisar', { relatorio: semTextoDeAtaque(rel), catalogo: ativas(b.evolucao ?? []) })
             const atual = ler()
             const alvo = (atual.evolucao ?? []).find((x) => x.id === rel.id)
             if (alvo) { alvo.revisao = { ...parecer, modo: 'sombra', feita_em: agora().toISOString() }; gravar(atual) }
