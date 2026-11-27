@@ -383,6 +383,11 @@ function criarApiDeDados({ storage, agora, seed, ia, quem }: { storage: NonNulla
         gravar(b)
         return clonar(rel)
       },
+      async parametrosDosExemplos(id, hoje) {
+        const rel = (ler().evolucao ?? []).find((x) => x.id === id)
+        if (!rel?.pacote) throw new ApiError('Esta proposta não tem consulta.', 422)
+        return chamarIa(ia.buscar, ia.url, '/evolucao/previa-parametros', { spec: rel.pacote.spec, hoje, perguntas: [] })
+      },
     },
     chatLogs: {
       async listar({ tipo, feedback } = {}) {

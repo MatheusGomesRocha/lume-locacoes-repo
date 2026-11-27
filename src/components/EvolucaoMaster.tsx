@@ -1,10 +1,11 @@
-import { Bot, Check, FileText, Power, Sparkles, X, Download } from 'lucide-react'
-import { Fragment, useState, type ReactNode } from 'react'
+import { Bot, Check, Database, FileText, Power, Search, Sparkles, X, Download } from 'lucide-react'
+import { Fragment, useEffect, useState, type ReactNode } from 'react'
 import { mensagemDeErro } from './Formulario'
 import { Botao, CaixaErro, Carregando, Confirmar, Modal, Vazio, useAviso } from './ui'
 import { useApi } from '../lib/servicos'
 import { estatisticasEvolucao } from '../lib/evolucao'
 import { errosDoTester } from '../lib/errosTester'
+import { conferirRegistro, previaComDadosReais, type ItemDaPrevia, type PreviaReal, type RegistroConferido } from '../lib/previa'
 import { ROTULO_PARECER, resumoDaAprovacao, comparar } from '../lib/aprovacao'
 import { useCarregar } from '../lib/useCarregar'
 import type { EstadoDoAprovador, RelatorioEvolucao, RevisaoEvolucao, VereditoEvolucao } from '../types'
@@ -61,6 +62,68 @@ function ParecerDoAgent({ revisao }: { revisao: RevisaoEvolucao }) {
   )
 }
 
+const ROTULO_OP: Record<string, string> = { igual: '=', diferente: '≠', contem: 'contém', maior_igual: '≥', menor_igual: '≤', ultimos_dias: 'últimos dias', proximos_dias: 'próximos dias' }
+const mostrar = (v: unknown) => (v === null || v === undefined ? '—' : typeof v === 'boolean' ? (v ? 'sim' : 'não') : String(v))
+
+/** Roda a consulta proposta sobre os dados REAIS (mesma leitura das telas que o chat usa) e deixa conferir um registro que deveria entrar. */
+function PreviaComDadosReais({ rel }: { rel: RelatorioEvolucao }) {
+  const api = useApi()
+  const [previa, setPrevia] = useState<PreviaReal | null>(null)
+  const [erro, setErro] = useState<string | null>(null)
+  const [texto, setTexto] = useState('')
+  const [conferidos, setConferidos] = useState<{ item: ItemDaPrevia; achados: RegistroConferido[] } | null>(null)
+  const [aberto, setAberto] = useState(0)
+  useEffect(() => { previaComDadosReais(api, rel).then(setPrevia).catch((e) => setErro(mensagemDeErro(e))) }, [api, rel])
+  const item = previa?.itens[aberto]
+  async function conferirTexto() {
+    if (!item) return
+    try { setConferidos({ item, achados: await conferirRegistro(api, rel, item, texto) }) } catch (e) { setErro(mensagemDeErro(e)) }
+  }
+  if (erro) return <CaixaErro mensagem={erro} />
+  if (!previa) return <Carregando />
+  return (
+    <div className="space-y-4 text-sm">
+      <p className="text-tinta-soft">Resultado desta consulta sobre os <strong>dados reais de agora</strong> ({previa.hoje}), pelo mesmo caminho que o chat usa. Compare com o que você sabe do sistema antes de aprovar.</p>
+      <div className="flex flex-wrap gap-2" role="tablist" aria-label="Perguntas de exemplo">
+        {previa.itens.map((x, i) => (
+          <button key={x.pergunta} role="tab" aria-selected={i === aberto} onClick={() => { setAberto(i); setConferidos(null) }}
+            className={`rounded-full border px-3 py-1 text-left text-xs ${i === aberto ? 'border-lume-500 bg-lume-50 text-lume-700' : 'border-gelo-300 bg-white text-tinta-soft'}`}>{x.pergunta}</button>
+        ))}
+      </div>
+      {item && (
+        <div className="space-y-3">
+          <p><strong>Parâmetros entendidos:</strong> {Object.keys(item.params).length ? Object.entries(item.params).map(([k, v]) => `${k} = ${mostrar(v)}`).join(' · ') : 'nenhum'}</p>
+          {item.erro ? <p className="rounded-lg bg-amber-50 p-3 text-amber-800">Não deu para rodar: {item.erro}</p> : (
+            <>
+              <p className="text-base font-semibold text-noite-900" role="status">{item.total} registro(s) contado(s){item.soma !== undefined ? ` · soma ${item.soma}` : ''}</p>
+              {item.linhas.length > 0 && (
+                <div className="overflow-x-auto rounded-lg ring-1 ring-gelo-200">
+                  <table className="min-w-full text-xs">
+                    <thead className="bg-gelo-50 text-left text-tinta-mute"><tr>{item.campos.map((c) => <th key={c} className="px-2 py-1.5 font-medium">{c}</th>)}</tr></thead>
+                    <tbody>{item.linhas.map((l, i) => <tr key={i} className="border-t border-gelo-100">{item.campos.map((c) => <td key={c} className="px-2 py-1.5">{mostrar(l[c])}</td>)}</tr>)}</tbody>
+                  </table>
+                </div>
+              )}
+              {item.total !== null && item.total > item.linhas.length && <p className="text-xs text-tinta-mute">Mostrando {item.linhas.length} de {item.total}.</p>}
+            </>
+          )}
+          <form className="flex flex-wrap items-center gap-2" onSubmit={(e) => { e.preventDefault(); void conferirTexto() }}>
+            <label className="text-tinta-soft" htmlFor="registro-conferir">Este registro deveria entrar?</label>
+            <input id="registro-conferir" value={texto} onChange={(e) => setTexto(e.target.value)} placeholder="ex.: 2026/0012" className="rounded-lg border border-gelo-300 px-2 py-1" />
+            <Botao pequeno variante="secundario" type="submit" disabled={texto.trim().length < 3}><Search className="h-4 w-4" aria-hidden /> Conferir</Botao>
+          </form>
+          {conferidos?.item === item && (conferidos.achados.length === 0 ? <p className="text-tinta-soft">Nenhum registro encontrado com esse texto (ou você não tem permissão para ver).</p> : conferidos.achados.map((a, i) => (
+            <div key={i} className={`rounded-lg p-3 ${a.entrou ? 'bg-green-50' : 'bg-amber-50'}`}>
+              <p className="font-medium">{a.entrou ? '✔ Entrou na contagem' : '✖ Não entrou na contagem'}: {Object.values(a.registro).filter((v) => typeof v === 'string').slice(0, 2).join(' · ')}</p>
+              <ul className="mt-1 text-xs text-tinta-soft">{a.filtros.map((f, j) => <li key={j}>{f.ok ? '✔' : '✖'} {f.campo} {ROTULO_OP[f.op] ?? f.op} {mostrar(f.esperado)} (o registro tem {mostrar(f.atual)})</li>)}</ul>
+            </div>
+          )))}
+        </div>
+      )}
+    </div>
+  )
+}
+
 type Decisao = { rel: RelatorioEvolucao; acao: 'aprovar' | 'reprovar' | 'desativar' }
 
 /** Aba do master: consultas novas que os Agents propuseram para as perguntas sem resposta. Nada vale sem o "aprovar" dele. */
@@ -73,6 +136,7 @@ export function EvolucaoMaster() {
   const [analisando, setAnalisando] = useState(false)
   const [revisando, setRevisando] = useState(false)
   const [lendoParecer, setLendoParecer] = useState<RelatorioEvolucao | null>(null)
+  const [vendoReais, setVendoReais] = useState<RelatorioEvolucao | null>(null)
   const estado = useCarregar<EstadoDoAprovador>(() => api.evolucao.aprovador(), [api])
 
   /** Executa agora o Agent de Aprovação (a versão real roda isto sozinha de 5 em 5 minutos). */
@@ -208,6 +272,7 @@ export function EvolucaoMaster() {
               {r.decisao && <p className="mt-1 text-xs text-tinta-mute">Decidida por {r.decisao.por}</p>}
               <div className="mt-2 flex flex-wrap gap-2">
                 <Botao pequeno variante="secundario" onClick={() => setLendo(r)}><FileText className="h-4 w-4" aria-hidden /> Ler relatório</Botao>
+                {r.pacote && <Botao pequeno variante="secundario" onClick={() => setVendoReais(r)}><Database className="h-4 w-4" aria-hidden /> Ver com dados reais</Botao>}
                 {r.revisao && <Botao pequeno variante="secundario" onClick={() => setLendoParecer(r)}><Bot className="h-4 w-4" aria-hidden /> Parecer do Agent</Botao>}
                 {r.auto_aprovada && r.amostra && <Botao pequeno onClick={() => void conferir(r.id)}><Check className="h-4 w-4" aria-hidden /> Conferi</Botao>}
                 {r.status === 'pendente' && r.pacote && (
@@ -222,6 +287,7 @@ export function EvolucaoMaster() {
       )}
 
       <Modal aberto={!!lendoParecer} titulo="Parecer do Agent de Aprovação" aoFechar={() => setLendoParecer(null)} largo>{lendoParecer?.revisao && <ParecerDoAgent revisao={lendoParecer.revisao} />}</Modal>
+      <Modal aberto={!!vendoReais} titulo="Esta consulta com os seus dados reais" aoFechar={() => setVendoReais(null)} largo>{vendoReais && <PreviaComDadosReais key={vendoReais.id} rel={vendoReais} />}</Modal>
       <Modal aberto={!!lendo} titulo="Relatório da proposta" aoFechar={() => setLendo(null)} largo>{lendo && <RelatorioTexto texto={lendo.texto} />}</Modal>
       <Confirmar aberto={!!decidindo} titulo={decidindo?.acao === 'aprovar' ? 'Aprovar esta consulta?' : decidindo?.acao === 'reprovar' ? 'Reprovar esta proposta?' : 'Desativar esta consulta?'}
         texto={decidindo ? textoDaDecisao(decidindo) : ''} rotuloConfirmar={decidindo?.acao === 'aprovar' ? 'Aprovar' : decidindo?.acao === 'reprovar' ? 'Reprovar' : 'Desativar'}

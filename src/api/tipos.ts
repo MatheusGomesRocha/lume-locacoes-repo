@@ -92,6 +92,8 @@ export interface Api {
     aprovador(): Promise<EstadoDoAprovador>
     /** O master conferiu uma aprovação automática sorteada. */
     conferir(id: string): Promise<RelatorioEvolucao>
+    /** Prévia com dados reais: o que o chat entenderia de cada pergunta de exemplo da consulta, com a data de hoje de quem usa. */
+    parametrosDosExemplos(id: string, hoje: string): Promise<{ exemplos: { pergunta: string; params: Record<string, unknown>; faltando: string[] }[] }>
   }
   /** Login e sessão. */
   auth: {

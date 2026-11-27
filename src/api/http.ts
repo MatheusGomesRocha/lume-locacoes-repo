@@ -105,6 +105,7 @@ export function criarApiHttp(baseUrl: string, buscar: typeof fetch = (...a) => f
       revisar: () => chamar('POST', '/evolucao/revisar'),
       aprovador: () => chamar('GET', '/evolucao/aprovador'),
       conferir: (id) => chamar('POST', `/evolucao/${id}/conferir`),
+      parametrosDosExemplos: (id, hoje) => chamar('POST', `/evolucao/${id}/previa-parametros`, { hoje }),
     },
     chatLogs: {
       listar: (f = {}) => chamar('GET', '/chat-logs' + qs({ tipo: f.tipo, feedback: f.feedback })),

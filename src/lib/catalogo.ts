@@ -141,7 +141,8 @@ function confere(op: string, atual: unknown, esperado: unknown, tipo: TipoCampo,
 
 export interface SessaoConsulta { papel: string; permissoes: string[]; /** AAAA-MM-DD; obrigatório para filtros "nos últimos N dias". */ hoje?: string }
 
-export function executarSpec(spec: SpecConsulta, params: Record<string, unknown>, dados: Record<string, Linha[]>, sessao: SessaoConsulta): Record<string, unknown> {
+/** Os registros que passam em TODOS os filtros (a base do total, da soma e da lista). */
+export function filtrarLinhas(spec: SpecConsulta, params: Record<string, unknown>, dados: Record<string, Linha[]>, sessao: SessaoConsulta): Linha[] {
   const ent = ENTIDADES[spec.entidade]
   if (!ent) throw new ErroConsulta('entidade desconhecida', 'erro')
   if (!sessao.permissoes.includes(spec.permissao)) throw new ErroConsulta(`sem a permissão ${spec.permissao}`, 'permissao')
@@ -160,6 +161,29 @@ export function executarSpec(spec: SpecConsulta, params: Record<string, unknown>
     }
     linhas = linhas.filter((l) => confere(f.op, l[f.campo], esperado, tipo, sessao.hoje))
   }
+  return linhas
+}
+
+/** Por que UM registro entrou ou não na consulta: cada filtro, o que se esperava e o que o registro tem. */
+export function explicarRegistro(spec: SpecConsulta, params: Record<string, unknown>, registro: Linha, sessao: SessaoConsulta): { campo: string; op: string; esperado: unknown; atual: unknown; ok: boolean }[] {
+  const ent = ENTIDADES[spec.entidade]
+  const valores = validarParametros(spec, params)
+  const saida: { campo: string; op: string; esperado: unknown; atual: unknown; ok: boolean }[] = []
+  for (const f of spec.filtros ?? []) {
+    const tipo = ent?.campos[f.campo]
+    if (!tipo) continue
+    if (f.parametro !== undefined && !(f.parametro in valores)) continue
+    const esperado = f.parametro !== undefined ? valores[f.parametro] : f.valor
+    saida.push({ campo: f.campo, op: f.op, esperado, atual: registro[f.campo] ?? null, ok: confere(f.op, registro[f.campo], esperado, tipo, sessao.hoje) })
+  }
+  return saida
+}
+
+/** Os campos de cada entidade (para mostrar os registros na prévia). */
+export const camposDaEntidade = (entidade: string): string[] => Object.keys(ENTIDADES[entidade]?.campos ?? {})
+
+export function executarSpec(spec: SpecConsulta, params: Record<string, unknown>, dados: Record<string, Linha[]>, sessao: SessaoConsulta): Record<string, unknown> {
+  let linhas = filtrarLinhas(spec, params, dados, sessao)
   const saida: Record<string, unknown> = { total: linhas.length }
   if (spec.operacao === 'somar') {
     const centavos = linhas.reduce((s, l) => s + Math.round(Number(l[spec.campo_soma ?? ''] ?? 0) * 100), 0)
