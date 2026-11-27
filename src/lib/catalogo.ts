@@ -99,16 +99,17 @@ function validarParametros(spec: SpecConsulta, params: Record<string, unknown>):
 const MAX_DIAS = 3650
 
 /** "Nos últimos N dias" = de (hoje - N) até hoje, inclusive. N = 0 é só hoje. Igual ao executor Python. */
-function janelaDeDias(hoje: string | undefined, dias: unknown): [string, string] {
+function janelaDeDias(hoje: string | undefined, dias: unknown, op = 'ultimos_dias'): [string, string] {
   if (!hoje || !dataValida(hoje)) throw new ErroConsulta('falta a data de hoje', 'erro')
   if (typeof dias !== 'number' || !Number.isInteger(dias) || dias < 0 || dias > MAX_DIAS) throw new ErroConsulta(`quantidade de dias inválida (0 a ${MAX_DIAS})`, 'parametro')
   const [a, m, d] = hoje.split('-').map(Number)
-  return [hojeISO(-dias, new Date(a, m - 1, d)), hoje]
+  const base = new Date(a, m - 1, d)
+  return op === 'proximos_dias' ? [hoje, hojeISO(dias, base)] : [hojeISO(-dias, base), hoje]
 }
 
 function confere(op: string, atual: unknown, esperado: unknown, tipo: TipoCampo, hoje?: string): boolean {
-  if (op === 'ultimos_dias') {
-    const [de, ate] = janelaDeDias(hoje, esperado)
+  if (op === 'ultimos_dias' || op === 'proximos_dias') {
+    const [de, ate] = janelaDeDias(hoje, esperado, op)
     return atual !== null && atual !== undefined && String(atual).slice(0, 10) >= de && String(atual).slice(0, 10) <= ate
   }
   if (op === 'contem') return atual !== null && atual !== undefined && casaPalavras(esperado, atual)

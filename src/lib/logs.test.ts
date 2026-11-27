@@ -92,3 +92,11 @@ describe('pergunta impossível', () => {
     expect(tipoDaResposta({ impossivel: true, encontrou: true } as never, 'Não consigo responder isso: o sistema não guarda cidade.')).toBe('ajuda')
   })
 })
+
+describe('resultado vazio de consulta que rodou', () => {
+  it('"não encontrei nenhum" depois de uma consulta que deu zero é consulta respondida, não sem resposta', () => {
+    const r = { voltas: 2, ferramentas: ['consultar_orcamentos'], consulta_vazia: true, encontrou: true } as never
+    expect(tipoDaResposta(r, 'Não encontrei nenhum orçamento com devolução hoje.')).toBe('consulta')
+    expect(tipoDaResposta({ voltas: 2, ferramentas: ['consultar_orcamentos'], encontrou: true } as never, 'Não encontrei nenhum orçamento com devolução hoje.')).toBe('nao_encontrou')
+  })
+})

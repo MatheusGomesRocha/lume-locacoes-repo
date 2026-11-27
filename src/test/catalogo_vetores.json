@@ -588,6 +588,116 @@
     ]
    },
    "erro": "parametro"
+  },
+  {
+   "nome": "devolução nos próximos 20 dias",
+   "sessao": "master",
+   "params": {
+    "dias": 20
+   },
+   "spec": {
+    "entidade": "orcamentos",
+    "operacao": "contar",
+    "permissao": "orcamentos.ver",
+    "parametros": {
+     "dias": {
+      "tipo": "numero",
+      "obrigatorio": true
+     }
+    },
+    "filtros": [
+     {
+      "campo": "data_devolucao",
+      "op": "proximos_dias",
+      "parametro": "dias"
+     }
+    ]
+   },
+   "esperado": {
+    "total": 1
+   }
+  },
+  {
+   "nome": "devolução nos próximos 30 dias",
+   "sessao": "master",
+   "params": {
+    "dias": 30
+   },
+   "spec": {
+    "entidade": "orcamentos",
+    "operacao": "contar",
+    "permissao": "orcamentos.ver",
+    "parametros": {
+     "dias": {
+      "tipo": "numero",
+      "obrigatorio": true
+     }
+    },
+    "filtros": [
+     {
+      "campo": "data_devolucao",
+      "op": "proximos_dias",
+      "parametro": "dias"
+     }
+    ]
+   },
+   "esperado": {
+    "total": 2
+   }
+  },
+  {
+   "nome": "próximos 0 dias é só hoje (ninguém devolve hoje)",
+   "sessao": "master",
+   "params": {
+    "dias": 0
+   },
+   "spec": {
+    "entidade": "orcamentos",
+    "operacao": "contar",
+    "permissao": "orcamentos.ver",
+    "parametros": {
+     "dias": {
+      "tipo": "numero",
+      "obrigatorio": true
+     }
+    },
+    "filtros": [
+     {
+      "campo": "data_devolucao",
+      "op": "proximos_dias",
+      "parametro": "dias"
+     }
+    ]
+   },
+   "esperado": {
+    "total": 0
+   }
+  },
+  {
+   "nome": "próximos dias negativo é recusado",
+   "sessao": "master",
+   "params": {
+    "dias": -1
+   },
+   "spec": {
+    "entidade": "orcamentos",
+    "operacao": "contar",
+    "permissao": "orcamentos.ver",
+    "parametros": {
+     "dias": {
+      "tipo": "numero",
+      "obrigatorio": true
+     }
+    },
+    "filtros": [
+     {
+      "campo": "data_devolucao",
+      "op": "proximos_dias",
+      "parametro": "dias"
+     }
+    ]
+   },
+   "erro": "parametro"
   }
  ]
 }

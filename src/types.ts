@@ -99,6 +99,8 @@ export interface Chamada {
 }
 
 export interface RespostaChat {
+  /** A consulta rodou sem erro e o resultado foi zero: resposta de verdade ("nenhum…"), não pergunta sem resposta. */
+  consulta_vazia?: boolean
   /** A pergunta pede algo que o sistema não guarda: já veio respondida, e não vai para a fila dos Agents. */
   impossivel?: boolean
   encontrou: boolean

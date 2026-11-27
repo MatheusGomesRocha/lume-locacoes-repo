@@ -13,7 +13,7 @@ export function respondeuSemDados(texto: string): boolean {
 export function tipoDaResposta(r: RespostaChat, resposta: string): TipoLog {
   if (r.impossivel) return 'ajuda' // respondida de verdade ("o sistema não guarda isso"): não é pergunta sem resposta para os Agents
   if (r.agente || r.executar?.length || (r.ferramentas && r.ferramentas.some((n) => n.startsWith('localizar_') || n === 'verificar_disponibilidade'))) return 'cadastro'
-  if (r.voltas === 2 || r.ferramentas?.length || r.consultas?.length) return respondeuSemDados(resposta) ? 'nao_encontrou' : 'consulta'
+  if (r.voltas === 2 || r.ferramentas?.length || r.consultas?.length) return respondeuSemDados(resposta) && !r.consulta_vazia ? 'nao_encontrou' : 'consulta'
   if (r.acoes?.[0]?.nome === 'excluir_registro') return 'exclusao'
   if (r.acoes?.length) return 'cadastro'
   if (r.confianca === 0 && !r.encontrou && r.fonte === null && resposta.includes('indispon')) return 'erro'

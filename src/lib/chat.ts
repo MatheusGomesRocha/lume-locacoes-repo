@@ -137,8 +137,11 @@ export function criarClienteChat(
 
       // Consulta simples (sem agente): uma volta só; se ainda pedir consulta, desiste em vez de entrar em laço.
       if (!primeira.agente) {
-        const segunda = await enviar({ ...corpo, resultados: await ler(primeira.consultas) })
-        return segunda.consultas?.length ? RESPOSTA_INDISPONIVEL : { ...segunda, voltas: 2, ferramentas: primeira.consultas.map((c) => c.nome), consumo: somarConsumo(primeira.consumo, segunda.consumo) }
+        const lidos = await ler(primeira.consultas)
+        const segunda = await enviar({ ...corpo, resultados: lidos })
+        // A consulta rodou sem erro e deu zero: "nenhum orçamento devolve hoje" é uma resposta de verdade, não falta de dado.
+        const consulta_vazia = lidos.length > 0 && lidos.every((l) => { const r = l.resultado as { total?: unknown; erro?: unknown } | null; return !!r && !('erro' in r) && r.total === 0 })
+        return segunda.consultas?.length ? RESPOSTA_INDISPONIVEL : { ...segunda, voltas: 2, ferramentas: primeira.consultas.map((c) => c.nome), consumo: somarConsumo(primeira.consumo, segunda.consumo), ...(consulta_vazia ? { consulta_vazia } : {}) }
       }
 
       // Agente: cada volta devolve o estado da conversa junto dos resultados. Teto de voltas evita laço.
