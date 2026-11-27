@@ -37,10 +37,10 @@ export interface SpecConsulta {
 const ENTIDADES: Record<string, { soAdmin: boolean; campos: Record<string, TipoCampo> }> = {
   clientes: { soAdmin: false, campos: { nome: 'texto', tipo: 'enum', cidade: 'texto', observacoes: 'texto', criado_em: 'data' } },
   produtos: { soAdmin: false, campos: { codigo: 'texto', nome: 'texto', categoria: 'texto', valor_diaria: 'numero', valor_reposicao: 'numero', quantidade: 'numero', ativo: 'bool', criado_em: 'data' } },
-  orcamentos: { soAdmin: false, campos: { numero: 'texto', cliente_nome: 'texto', evento: 'texto', status: 'enum', data_retirada: 'data', data_devolucao: 'data', diarias: 'numero', desconto: 'numero', total: 'numero' } },
-  pagamentos: { soAdmin: false, campos: { orcamento_numero: 'texto', valor: 'numero', vencimento: 'data', pago_em: 'data', status: 'enum', forma: 'enum' } },
-  usuarios: { soAdmin: true, campos: { nome: 'texto', papel: 'enum', grupo_nome: 'texto', ativo: 'bool' } },
-  grupos: { soAdmin: true, campos: { nome: 'texto', descricao: 'texto', sistema: 'bool', usuarios_count: 'numero', permissoes_count: 'numero' } },
+  orcamentos: { soAdmin: false, campos: { numero: 'texto', cliente_nome: 'texto', evento: 'texto', status: 'enum', data_retirada: 'data', data_devolucao: 'data', diarias: 'numero', desconto: 'numero', total: 'numero', criado_em: 'data' } },
+  pagamentos: { soAdmin: false, campos: { orcamento_numero: 'texto', valor: 'numero', vencimento: 'data', pago_em: 'data', status: 'enum', forma: 'enum', criado_em: 'data' } },
+  usuarios: { soAdmin: true, campos: { nome: 'texto', papel: 'enum', grupo_nome: 'texto', ativo: 'bool', criado_em: 'data' } },
+  grupos: { soAdmin: true, campos: { nome: 'texto', descricao: 'texto', sistema: 'bool', usuarios_count: 'numero', permissoes_count: 'numero', criado_em: 'data' } },
 }
 
 export class ErroConsulta extends Error {
@@ -177,16 +177,40 @@ export async function carregarEntidade(api: Api, entidade: string): Promise<Linh
     case 'produtos':
       return (await api.produtos.listar()).map((p) => ({ codigo: p.codigo, nome: p.nome, categoria: p.categoria, valor_diaria: p.valor_diaria, valor_reposicao: p.valor_reposicao, quantidade: p.quantidade, ativo: p.ativo, criado_em: diaLocal(p.criado_em) }))
     case 'orcamentos':
-      return (await api.orcamentos.listar()).map((o) => ({ numero: o.numero, cliente_nome: o.cliente?.nome ?? null, evento: o.evento, status: o.status, data_retirada: o.data_retirada, data_devolucao: o.data_devolucao, diarias: o.diarias, desconto: o.desconto, total: o.total }))
+      return (await api.orcamentos.listar()).map((o) => ({ numero: o.numero, cliente_nome: o.cliente?.nome ?? null, evento: o.evento, status: o.status, data_retirada: o.data_retirada, data_devolucao: o.data_devolucao, diarias: o.diarias, desconto: o.desconto, total: o.total, criado_em: diaLocal(o.criado_em) }))
     case 'pagamentos':
-      return (await api.pagamentos.listar('todos')).map((p) => ({ orcamento_numero: p.orcamento?.numero ?? null, valor: p.valor, vencimento: p.vencimento, pago_em: p.pago_em, status: p.status, forma: p.forma }))
+      return (await api.pagamentos.listar('todos')).map((p) => ({ orcamento_numero: p.orcamento?.numero ?? null, valor: p.valor, vencimento: p.vencimento, pago_em: p.pago_em, status: p.status, forma: p.forma, criado_em: diaLocal(p.criado_em) }))
     case 'usuarios':
-      return (await api.usuarios.listar()).map((u) => ({ nome: u.nome, papel: u.papel, grupo_nome: u.grupo?.nome ?? null, ativo: u.ativo }))
+      return (await api.usuarios.listar()).map((u) => ({ nome: u.nome, papel: u.papel, grupo_nome: u.grupo?.nome ?? null, ativo: u.ativo, criado_em: diaLocal(u.criado_em) }))
     case 'grupos':
-      return (await api.grupos.listar()).map((g) => ({ nome: g.nome, descricao: g.descricao ?? null, sistema: g.sistema, usuarios_count: g.usuarios_count, permissoes_count: g.permissoes.length }))
+      return (await api.grupos.listar()).map((g) => ({ nome: g.nome, descricao: g.descricao ?? null, sistema: g.sistema, usuarios_count: g.usuarios_count, permissoes_count: g.permissoes.length, criado_em: diaLocal(g.criado_em) }))
     default:
       throw new ErroConsulta('entidade desconhecida', 'erro')
   }
+}
+
+/** Parâmetro de texto obrigatório que a pergunta citou (ex.: categoria): o valor tem de EXISTIR nos dados; nada é inventado.
+ *  Devolve o que achou, ou a mensagem pedindo o valor (com as opções reais). */
+export function completarTextos(spec: SpecConsulta, params: Record<string, unknown>, pergunta: string, linhas: Linha[]): { params: Record<string, unknown> } | { pergunta: string } {
+  const ent = ENTIDADES[spec.entidade]
+  const saida = { ...params }
+  const palavras = new Set(semAcento(pergunta).split(/[^a-z0-9]+/).filter(Boolean))
+  const singular = (p: string) => (p.length > 3 ? p.replace(/s$/, '') : p)
+  const citadas = new Set([...palavras, ...[...palavras].map(singular)])
+  for (const [nome, def] of Object.entries(spec.parametros ?? {})) {
+    if (def.tipo !== 'texto' || !def.obrigatorio || saida[nome] !== undefined) continue
+    const filtro = (spec.filtros ?? []).find((f) => f.parametro === nome)
+    const campo = filtro?.campo
+    const rotulo = (campo && ent?.campos[campo] && campo) || nome
+    const existentes = campo ? [...new Set(linhas.map((l) => l[campo]).filter((v): v is string => typeof v === 'string' && v.trim() !== ''))].sort() : []
+    const achados = existentes.filter((v) => semAcento(v).split(/[^a-z0-9]+/).filter(Boolean).every((w) => citadas.has(w) || citadas.has(singular(w))))
+    if (achados.length !== 1) {
+      const opcoes = existentes.slice(0, 12).join(', ')
+      return { pergunta: achados.length > 1 ? `Qual destes você quer (${rotulo})? ${achados.join(', ')}.` : `Não achei na pergunta um valor de ${rotulo} que exista.${opcoes ? ` Os que existem: ${opcoes}.` : ''}` }
+    }
+    saida[nome] = achados[0]
+  }
+  return { params: saida }
 }
 
 /** Resultado de uma chamada `catalogo` pedida pela API. Sem sessão, sem spec aprovada ou sem permissão: lança (o chat mostra o motivo). */
@@ -195,9 +219,14 @@ export async function executarCatalogo(api: Api, chamada: Chamada): Promise<unkn
   if (!sessao) throw new ApiError('Faça login para consultar.', 401)
   const spec = (await api.evolucao.catalogo()).find((s) => s.nome === chamada.args.nome)
   if (!spec) return { erro: 'esta consulta não está mais aprovada' }
-  const params = (chamada.args.params ?? {}) as Record<string, unknown>
+  let params = (chamada.args.params ?? {}) as Record<string, unknown>
   try {
     const ctx: SessaoConsulta = { papel: sessao.usuario.papel, permissoes: sessao.permissoes, hoje: hojeISO() }
+    if (typeof chamada.args.pergunta === 'string' && sessao.permissoes.includes(spec.permissao)) {
+      const r = completarTextos(spec, params, chamada.args.pergunta, await carregarEntidade(api, spec.entidade))
+      if ('pergunta' in r) return { erro: r.pergunta }
+      params = r.params
+    }
     // permissão e parâmetros são conferidos ANTES de ler qualquer dado
     executarSpec({ ...spec, operacao: 'contar', filtros: [] }, params, { [spec.entidade]: [] }, ctx)
     return executarSpec(spec, params, { [spec.entidade]: await carregarEntidade(api, spec.entidade) }, ctx)

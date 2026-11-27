@@ -3,7 +3,7 @@ import { useState } from 'react'
 import { mensagemDeErro } from '../components/Formulario'
 import { FormProduto } from '../components/formularios/FormProduto'
 import { Botao, Cabecalho, CaixaErro, Carregando, Confirmar, Modal, Vazio, useAviso } from '../components/ui'
-import { moeda } from '../lib/format'
+import { moeda, dataBR } from '../lib/format'
 import { useApi } from '../lib/servicos'
 import { useSessao } from '../lib/sessao'
 import { useCarregar } from '../lib/useCarregar'
@@ -68,7 +68,7 @@ export default function Produtos() {
           ) : (
             <table className="w-full text-left text-[15px]">
               <thead className="hidden bg-gelo-50 text-sm text-tinta-soft sm:table-header-group">
-                <tr><th className="px-5 py-3 font-medium">Produto</th><th className="px-5 py-3 font-medium">Categoria</th><th className="px-5 py-3 text-right font-medium">Diária</th><th className="px-5 py-3 text-right font-medium">Estoque</th><th className="w-24" /></tr>
+                <tr><th className="px-5 py-3 font-medium">Produto</th><th className="px-5 py-3 font-medium">Categoria</th><th className="px-5 py-3 text-right font-medium">Diária</th><th className="px-5 py-3 text-right font-medium">Estoque</th><th className="hidden px-5 py-3 font-medium md:table-cell">Cadastrado em</th><th className="w-24" /></tr>
               </thead>
               <tbody className="divide-y divide-gelo-200">
                 {dados!.map((p) => (
@@ -77,6 +77,7 @@ export default function Produtos() {
                     <td className="hidden px-5 py-3.5 text-tinta-soft sm:table-cell">{p.categoria}</td>
                     <td className="px-5 py-3.5 text-right font-semibold tabular-nums">{moeda(p.valor_diaria)}</td>
                     <td className="hidden px-5 py-3.5 text-right tabular-nums text-tinta-soft sm:table-cell">{p.quantidade} un.</td>
+                    <td className="hidden px-5 py-3.5 text-tinta-soft md:table-cell">{dataBR(p.criado_em)}</td>
                     <td className="px-3 py-3.5"><div className="flex justify-end gap-1">
                       {pode('produtos.editar') && <button onClick={() => abrir(p)} aria-label={`Editar ${p.nome}`} className="rounded-lg p-2 text-tinta-mute hover:bg-gelo-100 hover:text-tinta"><Pencil className="h-4 w-4" /></button>}
                       {pode('produtos.excluir') && <button onClick={() => setExcluindo(p)} aria-label={`Excluir ${p.nome}`} className="rounded-lg p-2 text-tinta-mute hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>}

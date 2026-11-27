@@ -46,7 +46,7 @@ export default function Orcamentos() {
           ) : (
             <table className="w-full text-left text-[15px]">
               <thead className="hidden bg-gelo-50 text-sm text-tinta-soft md:table-header-group">
-                <tr><th className="px-5 py-3 font-medium">Nº</th><th className="px-5 py-3 font-medium">Evento</th><th className="px-5 py-3 font-medium">Período</th><th className="px-5 py-3 text-right font-medium">Total</th><th className="px-5 py-3 font-medium">Status</th></tr>
+                <tr><th className="px-5 py-3 font-medium">Nº</th><th className="px-5 py-3 font-medium">Evento</th><th className="px-5 py-3 font-medium">Período</th><th className="px-5 py-3 text-right font-medium">Total</th><th className="px-5 py-3 font-medium">Status</th><th className="hidden px-5 py-3 font-medium md:table-cell">Criado em</th></tr>
               </thead>
               <tbody className="divide-y divide-gelo-200">
                 {dados!.map((o) => (
@@ -56,6 +56,7 @@ export default function Orcamentos() {
                     <td className="hidden px-5 py-3.5 text-tinta-soft md:table-cell">{dataBR(o.data_retirada)} a {dataBR(o.data_devolucao)}<span className="block text-sm text-tinta-mute">{o.diarias} {o.diarias === 1 ? 'diária' : 'diárias'}</span></td>
                     <td className="px-5 py-3.5 text-right font-semibold tabular-nums">{moeda(o.total)}</td>
                     <td className="px-5 py-3.5"><Selo status={o.status} /></td>
+                    <td className="hidden px-5 py-3.5 text-tinta-soft md:table-cell">{dataBR(o.criado_em)}</td>
                   </tr>
                 ))}
               </tbody>

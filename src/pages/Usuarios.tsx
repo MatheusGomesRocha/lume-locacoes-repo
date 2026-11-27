@@ -1,4 +1,5 @@
 import { Pencil, Plus, Trash2 } from 'lucide-react'
+import { dataBR } from '../lib/format'
 import { useState, type FormEvent } from 'react'
 import { ID_GRUPO_MASTER } from '../api/acesso'
 import { errosDeCampos, mensagemDeErro } from '../components/Formulario'
@@ -112,7 +113,7 @@ export default function Usuarios() {
           {lista.dados!.length === 0 ? <Vazio titulo="Nenhum usuário" /> : (
             <table className="w-full text-left text-[15px]">
               <thead className="hidden bg-gelo-50 text-sm text-tinta-soft sm:table-header-group">
-                <tr><th className="px-5 py-3 font-medium">Nome</th><th className="px-5 py-3 font-medium">Nível</th><th className="px-5 py-3 font-medium">Grupo</th><th className="w-24" /></tr>
+                <tr><th className="px-5 py-3 font-medium">Nome</th><th className="px-5 py-3 font-medium">Nível</th><th className="px-5 py-3 font-medium">Grupo</th><th className="hidden px-5 py-3 font-medium md:table-cell">Cadastrado em</th><th className="w-24" /></tr>
               </thead>
               <tbody className="divide-y divide-gelo-200">
                 {lista.dados!.map((u) => {
@@ -123,6 +124,7 @@ export default function Usuarios() {
                       <td className="px-5 py-3.5"><p className="font-semibold text-noite-900">{u.nome}{meu && <span className="ml-2 text-xs font-normal text-tinta-mute">você</span>}</p><p className="text-sm text-tinta-mute">{u.email}{u.ativo ? '' : ' · desativado'}</p></td>
                       <td className="hidden px-5 py-3.5 text-tinta-soft sm:table-cell">{ROTULO_PAPEL[u.papel]}</td>
                       <td className="hidden px-5 py-3.5 text-tinta-soft sm:table-cell">{u.grupo?.nome ?? '—'}</td>
+                      <td className="hidden px-5 py-3.5 text-tinta-soft md:table-cell">{dataBR(u.criado_em)}</td>
                       <td className="px-3 py-3.5"><div className="flex justify-end gap-1">
                         {gerencia && pode('usuarios.editar') && <button onClick={() => setEditando(u)} aria-label={`Editar ${u.nome}`} className="rounded-lg p-2 text-tinta-mute hover:bg-gelo-100 hover:text-tinta"><Pencil className="h-4 w-4" /></button>}
                         {gerencia && !meu && u.papel !== 'master' && pode('usuarios.excluir') && <button onClick={() => setExcluindo(u)} aria-label={`Excluir ${u.nome}`} className="rounded-lg p-2 text-tinta-mute hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>}

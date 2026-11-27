@@ -68,7 +68,7 @@ export default function Financeiro() {
           {dados!.length === 0 ? <Vazio titulo="Nenhuma cobrança aqui" texto="Aprove um orçamento para gerar a primeira cobrança." /> : (
             <>
               <table className="w-full text-left text-[15px]">
-                <thead className="hidden bg-gelo-50 text-sm text-tinta-soft md:table-header-group"><tr><th className="px-5 py-3 font-medium">Orçamento</th><th className="px-5 py-3 font-medium">Vencimento</th><th className="px-5 py-3 text-right font-medium">Valor</th><th className="px-5 py-3 font-medium">Situação</th><th className="w-32" /></tr></thead>
+                <thead className="hidden bg-gelo-50 text-sm text-tinta-soft md:table-header-group"><tr><th className="px-5 py-3 font-medium">Orçamento</th><th className="px-5 py-3 font-medium">Vencimento</th><th className="px-5 py-3 text-right font-medium">Valor</th><th className="px-5 py-3 font-medium">Situação</th><th className="hidden px-5 py-3 font-medium md:table-cell">Criado em</th><th className="w-32" /></tr></thead>
                 <tbody className="divide-y divide-gelo-200">
                   {dados!.map((p) => (
                     <tr key={p.id} className="hover:bg-gelo-50/60">
@@ -76,6 +76,7 @@ export default function Financeiro() {
                       <td className="hidden px-5 py-3.5 text-tinta-soft md:table-cell">{dataBR(p.vencimento)}{p.pago_em && <span className="block text-sm text-tinta-mute">Pago em {dataBR(p.pago_em)}{p.forma ? ` · ${rotuloForma[p.forma]}` : ''}</span>}</td>
                       <td className="px-5 py-3.5 text-right font-semibold tabular-nums">{moeda(p.valor)}</td>
                       <td className="px-5 py-3.5"><Selo status={situacao(p)} /></td>
+                      <td className="hidden px-5 py-3.5 text-tinta-soft md:table-cell">{dataBR(p.criado_em)}</td>
                       <td className="px-5 py-3.5 text-right">{p.status === 'pendente' && pode('financeiro.baixar') && <Botao pequeno variante="secundario" onClick={() => abrir(p)} aria-label={`Registrar pagamento do orçamento ${p.orcamento?.numero}`}>Registrar pagamento</Botao>}</td>
                     </tr>
                   ))}

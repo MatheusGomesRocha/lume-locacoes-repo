@@ -57,9 +57,27 @@ export async function executarConsulta(api: Api, chamada: Chamada): Promise<unkn
       return { total: lista.length, linhas: lista.slice(0, MAX_LINHAS).map((c) => ({ nome: c.nome, tipo: c.tipo === 'PJ' ? 'empresa' : 'pessoa física', cidade: c.cidade })) }
     }
     case 'consultar_produtos': {
-      const lista = await api.produtos.listar({ busca: texto(a.busca), categoria: texto(a.categoria), ativo: typeof a.ativo === 'boolean' ? a.ativo : undefined })
+      // A categoria pedida nem sempre existe com esse nome ("Cadeiras" é nome de produto, a categoria é "Mobiliário"): confere com as
+      // reais, aceita singular/plural e, se não existir, busca pelo nome e AVISA, em vez de dizer só "não encontrei nenhum produto".
+      let categoria = texto(a.categoria)
+      let busca = texto(a.busca)
+      let aviso: string | undefined
+      if (categoria) {
+        const categorias = [...new Set((await api.produtos.listar()).map((p) => p.categoria))].sort()
+        if (!categorias.includes(categoria)) {
+          const igual = categorias.find((c) => singularizar(semAcento(c)) === singularizar(semAcento(categoria!)))
+          if (igual) categoria = igual
+          else {
+            aviso = `Não existe a categoria “${categoria}”. Categorias que existem: ${categorias.join(', ')}. Busquei produtos com “${categoria}” no nome.`
+            busca = busca ?? categoria
+            categoria = undefined
+          }
+        }
+      }
+      const lista = await api.produtos.listar({ busca, categoria, ativo: typeof a.ativo === 'boolean' ? a.ativo : undefined })
       return {
         total: lista.length,
+        ...(aviso ? { aviso } : {}),
         linhas: lista.slice(0, MAX_LINHAS).map((p) => ({ codigo: p.codigo, nome: p.nome, categoria: p.categoria, valor_diaria: p.valor_diaria, estoque: p.quantidade, ativo: p.ativo })),
       }
     }

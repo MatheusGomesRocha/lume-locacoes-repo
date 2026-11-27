@@ -1,4 +1,5 @@
 import { Pencil, Plus, Search, Trash2 } from 'lucide-react'
+import { dataBR } from '../lib/format'
 import { useState } from 'react'
 import { mensagemDeErro } from '../components/Formulario'
 import { FormCliente } from '../components/formularios/FormCliente'
@@ -56,7 +57,7 @@ export default function Clientes() {
           ) : (
             <table className="w-full text-left text-[15px]">
               <thead className="hidden bg-gelo-50 text-sm text-tinta-soft sm:table-header-group">
-                <tr><th className="px-5 py-3 font-medium">Nome</th><th className="px-5 py-3 font-medium">Contato</th><th className="px-5 py-3 font-medium">Cidade</th><th className="w-24" /></tr>
+                <tr><th className="px-5 py-3 font-medium">Nome</th><th className="px-5 py-3 font-medium">Contato</th><th className="px-5 py-3 font-medium">Cidade</th><th className="hidden px-5 py-3 font-medium md:table-cell">Cadastrado em</th><th className="w-24" /></tr>
               </thead>
               <tbody className="divide-y divide-gelo-200">
                 {dados!.map((c) => (
@@ -64,6 +65,7 @@ export default function Clientes() {
                     <td className="px-5 py-3.5"><p className="font-semibold text-noite-900">{c.nome}</p><p className="text-sm text-tinta-mute">{c.tipo === 'PJ' ? 'Empresa' : 'Pessoa física'}{c.documento ? ` · ${c.documento}` : ''}</p></td>
                     <td className="hidden px-5 py-3.5 text-tinta-soft sm:table-cell"><p>{c.email ?? '—'}</p><p className="text-sm text-tinta-mute">{c.telefone ?? ''}</p></td>
                     <td className="hidden px-5 py-3.5 text-tinta-soft sm:table-cell">{c.cidade ?? '—'}</td>
+                    <td className="hidden px-5 py-3.5 text-tinta-soft md:table-cell">{dataBR(c.criado_em)}</td>
                     <td className="px-3 py-3.5"><div className="flex justify-end gap-1">
                       {pode('clientes.editar') && <button onClick={() => abrir(c)} aria-label={`Editar ${c.nome}`} className="rounded-lg p-2 text-tinta-mute hover:bg-gelo-100 hover:text-tinta"><Pencil className="h-4 w-4" /></button>}
                       {pode('clientes.excluir') && <button onClick={() => setExcluindo(c)} aria-label={`Excluir ${c.nome}`} className="rounded-lg p-2 text-tinta-mute hover:bg-red-50 hover:text-red-600"><Trash2 className="h-4 w-4" /></button>}

@@ -39,16 +39,19 @@ const novoSal = () => Math.random().toString(36).slice(2, 10)
 const permissoesDe = (u: { papel: Papel; grupo_id: number }, grupos: Acesso['grupos']): string[] =>
   u.papel === 'master' ? [...TODAS_PERMISSOES, PERMISSAO_SO_MASTER] : limparPermissoes(grupos.find((g) => g.id === u.grupo_id)?.permissoes ?? [])
 
+/** O seed não tem data de cadastro: usa-se um dia fixo para trás, ao meio-dia (sem virar de dia por fuso). */
+const ANTES = (dias: number) => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), d.getDate() - dias, 12).toISOString() }
+
 export async function acessoDoSeed(): Promise<Acesso> {
   const grupos: Acesso['grupos'] = [
-    { id: ID_GRUPO_MASTER, nome: 'Master', descricao: 'Acesso total. Não pode ser alterado.', permissoes: [...TODAS_PERMISSOES], sistema: true },
-    { id: 2, nome: 'Administração', descricao: 'Tudo, inclusive cadastrar usuários.', permissoes: [...TODAS_PERMISSOES], sistema: false },
-    { id: 3, nome: 'Atendimento', descricao: 'Monta orçamentos e cuida de clientes.', sistema: false, permissoes: ['painel.ver', 'orcamentos.ver', 'orcamentos.criar', 'orcamentos.editar', 'orcamentos.enviar', 'clientes.ver', 'clientes.criar', 'clientes.editar', 'produtos.ver', 'assistente.usar'] },
-    { id: 4, nome: 'Financeiro', descricao: 'Acompanha e dá baixa nas cobranças.', sistema: false, permissoes: ['painel.ver', 'orcamentos.ver', 'financeiro.ver', 'financeiro.baixar', 'clientes.ver', 'assistente.usar'] },
+    { id: ID_GRUPO_MASTER, nome: 'Master', descricao: 'Acesso total. Não pode ser alterado.', permissoes: [...TODAS_PERMISSOES], sistema: true, criado_em: ANTES(30) },
+    { id: 2, nome: 'Administração', descricao: 'Tudo, inclusive cadastrar usuários.', permissoes: [...TODAS_PERMISSOES], sistema: false, criado_em: ANTES(30) },
+    { id: 3, nome: 'Atendimento', descricao: 'Monta orçamentos e cuida de clientes.', sistema: false, criado_em: ANTES(12), permissoes: ['painel.ver', 'orcamentos.ver', 'orcamentos.criar', 'orcamentos.editar', 'orcamentos.enviar', 'clientes.ver', 'clientes.criar', 'clientes.editar', 'produtos.ver', 'assistente.usar'] },
+    { id: 4, nome: 'Financeiro', descricao: 'Acompanha e dá baixa nas cobranças.', sistema: false, criado_em: ANTES(5), permissoes: ['painel.ver', 'orcamentos.ver', 'financeiro.ver', 'financeiro.baixar', 'clientes.ver', 'assistente.usar'] },
   ]
   const criar = async (id: number, nome: string, email: string, papel: Papel, grupo_id: number, senha: string): Promise<UsuarioSalvo> => {
     const sal = novoSal()
-    return { id, nome, email, papel, grupo_id, ativo: true, sal, senha_hash: await hashSenha(senha, sal) }
+    return { id, nome, email, papel, grupo_id, ativo: true, criado_em: ANTES(id === 1 ? 30 : id * 3), sal, senha_hash: await hashSenha(senha, sal) }
   }
   return {
     grupos,
@@ -202,7 +205,7 @@ export function criarAcessoLocal({ storage, sessaoStorage = storage, sessaoInici
         if (papel === 'master') throw falha('papel', 'Só existe um master.')
         if (Number(d.grupo_id) === ID_GRUPO_MASTER) throw falha('grupo_id', 'O grupo Master é só do master.')
         const sal = novoSal()
-        const novo: UsuarioSalvo = { id: proximoId(a.usuarios), nome: d.nome.trim(), email: d.email.trim(), papel, grupo_id: Number(d.grupo_id), ativo: d.ativo, sal, senha_hash: await hashSenha(d.senha!, sal) }
+        const novo: UsuarioSalvo = { id: proximoId(a.usuarios), nome: d.nome.trim(), email: d.email.trim(), papel, grupo_id: Number(d.grupo_id), ativo: d.ativo, sal, senha_hash: await hashSenha(d.senha!, sal), criado_em: new Date().toISOString() }
         a.usuarios.push(novo)
         gravar(a)
         return publico(novo, a)
@@ -250,7 +253,7 @@ export function criarAcessoLocal({ storage, sessaoStorage = storage, sessaoInici
       async criar(d) {
         const { a } = await exigirMaster()
         validarGrupo(a, d)
-        const novo = { id: proximoId(a.grupos), nome: d.nome.trim(), descricao: d.descricao?.trim() || null, permissoes: limparPermissoes(d.permissoes), sistema: false }
+        const novo = { id: proximoId(a.grupos), nome: d.nome.trim(), descricao: d.descricao?.trim() || null, permissoes: limparPermissoes(d.permissoes), sistema: false, criado_em: new Date().toISOString() }
         a.grupos.push(novo)
         gravar(a)
         return { ...clonar(novo), usuarios_count: 0 }

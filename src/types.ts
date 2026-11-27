@@ -50,6 +50,7 @@ export interface Pagamento {
   forma: FormaPagamento | null
   status: StatusPagamento
   orcamento?: { id: number; numero: string; evento: string; cliente?: { id: number; nome: string } }
+  criado_em?: string
 }
 
 export interface Orcamento {
@@ -67,6 +68,7 @@ export interface Orcamento {
   diarias: number
   itens: ItemOrcamento[]
   pagamentos?: Pagamento[]
+  criado_em?: string
 }
 
 export interface OrcamentoForm {
@@ -97,6 +99,8 @@ export interface Chamada {
 }
 
 export interface RespostaChat {
+  /** A pergunta pede algo que o sistema não guarda: já veio respondida, e não vai para a fila dos Agents. */
+  impossivel?: boolean
   encontrou: boolean
   resposta: string
   fonte: { id: string; modulo: string; pergunta: string } | null
@@ -196,6 +200,7 @@ export interface Usuario {
   grupo_id: number
   grupo?: { id: number; nome: string }
   ativo: boolean
+  criado_em?: string
 }
 export interface UsuarioForm {
   nome: string
@@ -214,6 +219,7 @@ export interface Grupo {
   permissoes: string[]
   sistema: boolean
   usuarios_count: number
+  criado_em?: string
 }
 export interface GrupoForm { nome: string; descricao: string | null; permissoes: string[] }
 

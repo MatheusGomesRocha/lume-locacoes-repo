@@ -102,7 +102,11 @@ export function bancoDoSeed(seed: Seed, base: Date = new Date()): Banco {
   const cadastradoHa = (i: number) => new Date(base.getFullYear(), base.getMonth(), base.getDate() - (i * 4 + 1), 12).toISOString()
   const clientes = clonar(seed.clientes).map((c, i) => ({ ...c, criado_em: cadastradoHa(i) }))
   const produtos = clonar(seed.produtos).map((p, i) => ({ ...p, criado_em: cadastradoHa(i) }))
-  return { clientes, produtos, orcamentos, pagamentos }
+  return {
+    clientes, produtos,
+    orcamentos: orcamentos.map((o, i) => ({ ...o, criado_em: cadastradoHa(i) })),
+    pagamentos: pagamentos.map((p, i) => ({ ...p, criado_em: cadastradoHa(i) })),
+  }
 }
 
 export interface OpcoesLocal {
@@ -467,7 +471,7 @@ function criarApiDeDados({ storage, agora, seed, ia, quem }: { storage: NonNulla
           id: proximoId(b.orcamentos),
           numero: proximoNumero(b.orcamentos.map((o) => o.numero), agora()),
           cliente_id: Number(d.cliente_id), evento: d.evento.trim(), data_retirada: d.data_retirada, data_devolucao: d.data_devolucao,
-          status: 'rascunho', desconto: Number(d.desconto) || 0, observacoes: d.observacoes?.trim() || null, itens,
+          status: 'rascunho', desconto: Number(d.desconto) || 0, observacoes: d.observacoes?.trim() || null, itens, criado_em: agora().toISOString(),
           total: calcularTotal(itens, diarias(d.data_retirada, d.data_devolucao), Number(d.desconto) || 0),
         }
         b.orcamentos.push(novo)
@@ -511,7 +515,7 @@ function criarApiDeDados({ storage, agora, seed, ia, quem }: { storage: NonNulla
         const faltas = faltasDe(b, o)
         if (faltas.length) throw new ApiError('Não há estoque suficiente para o período do orçamento.', 422, faltas)
         o.status = 'aprovado'
-        b.pagamentos.push({ id: proximoId(b.pagamentos), orcamento_id: o.id, valor: o.total, vencimento: o.data_retirada, pago_em: null, forma: null, status: 'pendente' })
+        b.pagamentos.push({ id: proximoId(b.pagamentos), orcamento_id: o.id, valor: o.total, vencimento: o.data_retirada, pago_em: null, forma: null, status: 'pendente', criado_em: agora().toISOString() })
         gravar(b)
         return montar(b, o)
       },

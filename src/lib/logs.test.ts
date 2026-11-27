@@ -86,3 +86,9 @@ describe('consulta que não achou nada conta como pergunta sem resposta', () => 
     expect(tipoDaResposta(r, 'Você tem 8 clientes.')).toBe('consulta')
   })
 })
+
+describe('pergunta impossível', () => {
+  it('conta como ajuda respondida, não como pergunta sem resposta para os Agents', () => {
+    expect(tipoDaResposta({ impossivel: true, encontrou: true } as never, 'Não consigo responder isso: o sistema não guarda cidade.')).toBe('ajuda')
+  })
+})
