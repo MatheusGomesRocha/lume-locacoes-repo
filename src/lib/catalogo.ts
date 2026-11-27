@@ -93,7 +93,24 @@ function validarParametros(spec: SpecConsulta, params: Record<string, unknown>):
     }
     saida[nome] = valorDoParametro(def, params[nome])
   }
+  recusarPeriodoInvertido(spec, saida)
   return saida
+}
+
+/** Período de calendário (campo >= de e campo <= ate) com "de" depois de "ate" é pergunta sem sentido: recusa em vez de devolver 0 como se fosse resposta. */
+function recusarPeriodoInvertido(spec: SpecConsulta, valores: Record<string, string | number | boolean>): void {
+  const filtros = spec.filtros ?? []
+  for (const f of filtros) {
+    if (f.op !== 'maior_igual' || !('parametro' in f) || !f.parametro) continue
+    for (const g of filtros) {
+      if (g.op !== 'menor_igual' || g.campo !== f.campo || !('parametro' in g) || !g.parametro) continue
+      const de = valores[f.parametro]
+      const ate = valores[g.parametro]
+      if (typeof de === 'string' && typeof ate === 'string' && spec.parametros?.[f.parametro]?.tipo === 'data' && de > ate) {
+        throw new ErroConsulta(`a data inicial (${f.parametro}) é depois da final (${g.parametro})`, 'parametro')
+      }
+    }
+  }
 }
 
 const MAX_DIAS = 3650

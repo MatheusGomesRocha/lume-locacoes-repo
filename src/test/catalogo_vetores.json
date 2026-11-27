@@ -810,6 +810,42 @@
     ]
    },
    "erro": "parametro"
+  },
+  {
+   "nome": "período com data inicial depois da final é recusado",
+   "sessao": "master",
+   "params": {
+    "de": "2026-11-26",
+    "ate": "2026-11-20"
+   },
+   "spec": {
+    "entidade": "clientes",
+    "operacao": "contar",
+    "permissao": "clientes.ver",
+    "parametros": {
+     "de": {
+      "tipo": "data",
+      "obrigatorio": true
+     },
+     "ate": {
+      "tipo": "data",
+      "obrigatorio": true
+     }
+    },
+    "filtros": [
+     {
+      "campo": "criado_em",
+      "op": "maior_igual",
+      "parametro": "de"
+     },
+     {
+      "campo": "criado_em",
+      "op": "menor_igual",
+      "parametro": "ate"
+     }
+    ]
+   },
+   "erro": "parametro"
   }
  ]
 }
