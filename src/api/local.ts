@@ -356,6 +356,7 @@ function criarApiDeDados({ storage, agora, seed, ia, quem }: { storage: NonNulla
         const b = ler()
         const abertas = (b.evolucao ?? []).filter((x) => x.status === 'pendente' && !x.revisao).slice(0, POR_EXECUCAO_DEMO)
         const resumo: ResumoDaExecucao = { modo: 'sombra', revisadas: 0, aprovadas_automaticamente: 0, erros: 0, pendentes_sem_parecer: (b.evolucao ?? []).filter((x) => x.status === 'pendente' && !x.revisao).length, mensagem: '' }
+        let motivoDoErro = ''
         for (const rel of abertas) {
           try {
             const parecer = await chamarIa<RevisaoEvolucao>(ia.buscar, ia.url, '/evolucao/revisar', { relatorio: rel, catalogo: ativas(b.evolucao ?? []) })
@@ -363,11 +364,12 @@ function criarApiDeDados({ storage, agora, seed, ia, quem }: { storage: NonNulla
             const alvo = (atual.evolucao ?? []).find((x) => x.id === rel.id)
             if (alvo) { alvo.revisao = { ...parecer, modo: 'sombra', feita_em: agora().toISOString() }; gravar(atual) }
             resumo.revisadas += 1
-          } catch {
+          } catch (e) {
             resumo.erros += 1
+            motivoDoErro ||= `${rel.id}: ${e instanceof Error ? e.message : 'erro desconhecido'}`
           }
         }
-        resumo.mensagem = resumo.revisadas ? `${resumo.revisadas} proposta(s) revisada(s) no modo sombra.` : resumo.pendentes_sem_parecer ? 'Não consegui revisar agora. Tente de novo.' : 'Nenhuma proposta em aberto para revisar.'
+        resumo.mensagem = resumo.revisadas ? `${resumo.revisadas} proposta(s) revisada(s) no modo sombra.` : resumo.pendentes_sem_parecer ? `Não consegui revisar agora. Tente de novo.${motivoDoErro ? ` (${motivoDoErro})` : ''}` : 'Nenhuma proposta em aberto para revisar.'
         return resumo
       },
       async aprovador() {
